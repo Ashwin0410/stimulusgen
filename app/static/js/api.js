@@ -66,16 +66,20 @@ const music = {
   getTrack: (trackId) => request(`/music/track/${trackId}`),
   getByPath: (path) =>
     request(`/music/by-path?path=${encodeURIComponent(path)}`),
-  // NEW: Get duration and target words for a track
+  // Get duration and target words for a track
   getDuration: (path, wpm = 140) =>
     request(`/music/duration?path=${encodeURIComponent(path)}&wpm=${wpm}`),
+  // Upload a new music file
   upload: (file, folder = "") => {
     const formData = new FormData();
     formData.append("file", file);
     if (folder) formData.append("folder", folder);
     return request("/music/upload", { method: "POST", body: formData });
   },
+  // Delete a music track (only uploaded tracks)
   delete: (trackId) => request(`/music/track/${trackId}`, { method: "DELETE" }),
+  // NEW: List only uploaded music tracks
+  listUploaded: () => request("/music/uploaded"),
 };
 
 // ========== LLM ==========
@@ -88,7 +92,7 @@ const llm = {
   templates: () => request("/llm/templates"),
   getStyle: (styleId) => request(`/llm/styles/${styleId}`),
   chaplinReference: () => request("/llm/reference/chaplin"),
-  // NEW: Calculate target words from duration
+  // Calculate target words from duration
   calculateWords: (durationMs, wpm = 140) =>
     request(`/llm/calculate-words?duration_ms=${durationMs}&wpm=${wpm}`),
 };
