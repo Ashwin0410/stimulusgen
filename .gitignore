@@ -12,9 +12,3 @@ assets/prosody/*.wav
 .idea/
 .vscode/
 .DS_Store
-# Add to .gitignore
-*.mp3
-*.wav
-*.m4a
-data/outputs/
-uploads/
