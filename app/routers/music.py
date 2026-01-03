@@ -6,11 +6,12 @@ from typing import List
 from app.config import ASSETS_DIR, UPLOADS_DIR
 from app.utils.audio import get_file_duration_ms
 from app.utils.naming import sanitize_filename, generate_track_id, extract_track_name
-from app.services.prompt import calculate_target_words  # NEW: Import helper
+from app.services.prompt import calculate_target_words
 
 router = APIRouter()
 
 MUSIC_DIR = ASSETS_DIR / "music" / "tracks"
+UPLOADED_MUSIC_DIR = UPLOADS_DIR / "music"
 ALLOWED_EXTENSIONS = {".mp3", ".wav", ".m4a", ".ogg", ".flac"}
 
 
@@ -18,34 +19,61 @@ def scan_music_library() -> List[dict]:
     """Scan music directory and return all tracks."""
     tracks = []
     
-    if not MUSIC_DIR.exists():
-        return tracks
-    
-    def scan_folder(folder: Path, folder_name: str = ""):
+    def scan_folder(folder: Path, folder_name: str = "", is_uploaded: bool = False):
+        if not folder.exists():
+            return
+            
         for item in sorted(folder.iterdir()):
             if item.is_dir():
                 # Recurse into subfolders
                 subfolder_name = item.name if not folder_name else f"{folder_name}/{item.name}"
-                scan_folder(item, subfolder_name)
+                scan_folder(item, subfolder_name, is_uploaded)
             elif item.suffix.lower() in ALLOWED_EXTENSIONS:
                 try:
+                    # Determine the base dir for relative path calculation
+                    base_dir = UPLOADED_MUSIC_DIR if is_uploaded else MUSIC_DIR
+                    relative_path = str(item.relative_to(base_dir))
+                    
+                    # Prefix uploaded tracks path to distinguish them
+                    if is_uploaded:
+                        path_for_api = f"__uploaded__/{relative_path}"
+                    else:
+                        path_for_api = relative_path
+                    
                     track = {
                         "id": generate_track_id(item),
                         "name": extract_track_name(item),
                         "filename": item.name,
                         "folder": folder_name,
-                        "path": str(item.relative_to(MUSIC_DIR)),
+                        "path": path_for_api,
                         "full_path": str(item),
                         "extension": item.suffix.lower(),
                         "size_bytes": item.stat().st_size,
+                        "is_uploaded": is_uploaded,
                     }
-                    # Duration extraction is expensive - skip for listing
                     tracks.append(track)
                 except Exception as e:
                     print(f"[Music] Error scanning {item}: {e}")
     
-    scan_folder(MUSIC_DIR)
+    # Scan default music directory
+    if MUSIC_DIR.exists():
+        scan_folder(MUSIC_DIR, "", is_uploaded=False)
+    
+    # Scan uploaded music directory
+    if UPLOADED_MUSIC_DIR.exists():
+        scan_folder(UPLOADED_MUSIC_DIR, "", is_uploaded=True)
+    
     return tracks
+
+
+def get_full_path_from_api_path(path: str) -> Path:
+    """Convert API path to actual file path."""
+    if path.startswith("__uploaded__/"):
+        # Remove prefix and use uploaded music directory
+        relative_path = path.replace("__uploaded__/", "", 1)
+        return UPLOADED_MUSIC_DIR / relative_path
+    else:
+        return MUSIC_DIR / path
 
 
 @router.get("/music")
@@ -53,35 +81,69 @@ async def list_music():
     """Get all available music tracks."""
     tracks = scan_music_library()
     
-    # Group by folder
+    # Group by folder, separating uploaded from default
     folders = {}
+    uploaded_folders = {}
+    
     for track in tracks:
         folder = track["folder"] or "Uncategorized"
-        if folder not in folders:
-            folders[folder] = []
-        folders[folder].append(track)
+        
+        if track.get("is_uploaded"):
+            folder_name = f"📁 Uploaded: {folder}" if folder != "Uncategorized" else "📁 Uploaded"
+            if folder_name not in uploaded_folders:
+                uploaded_folders[folder_name] = []
+            uploaded_folders[folder_name].append(track)
+        else:
+            if folder not in folders:
+                folders[folder] = []
+            folders[folder].append(track)
+    
+    # Merge folders with uploaded at the end
+    all_folders = {**folders, **uploaded_folders}
     
     return {
         "tracks": tracks,
         "total": len(tracks),
-        "folders": folders,
-        "folder_names": list(folders.keys()),
+        "folders": all_folders,
+        "folder_names": list(all_folders.keys()),
+        "has_uploads": len(uploaded_folders) > 0,
     }
 
 
 @router.get("/music/folders")
 async def list_folders():
     """Get list of music folders."""
-    if not MUSIC_DIR.exists():
-        return {"folders": []}
-    
     folders = []
-    for item in sorted(MUSIC_DIR.iterdir()):
-        if item.is_dir():
-            track_count = sum(1 for f in item.rglob("*") if f.suffix.lower() in ALLOWED_EXTENSIONS)
+    
+    # Default music folders
+    if MUSIC_DIR.exists():
+        for item in sorted(MUSIC_DIR.iterdir()):
+            if item.is_dir():
+                track_count = sum(1 for f in item.rglob("*") if f.suffix.lower() in ALLOWED_EXTENSIONS)
+                folders.append({
+                    "name": item.name,
+                    "track_count": track_count,
+                    "is_uploaded": False,
+                })
+    
+    # Uploaded music folders
+    if UPLOADED_MUSIC_DIR.exists():
+        for item in sorted(UPLOADED_MUSIC_DIR.iterdir()):
+            if item.is_dir():
+                track_count = sum(1 for f in item.rglob("*") if f.suffix.lower() in ALLOWED_EXTENSIONS)
+                folders.append({
+                    "name": f"Uploaded: {item.name}",
+                    "track_count": track_count,
+                    "is_uploaded": True,
+                })
+        
+        # Count files directly in uploaded root
+        root_count = sum(1 for f in UPLOADED_MUSIC_DIR.iterdir() if f.is_file() and f.suffix.lower() in ALLOWED_EXTENSIONS)
+        if root_count > 0:
             folders.append({
-                "name": item.name,
-                "track_count": track_count,
+                "name": "Uploaded",
+                "track_count": root_count,
+                "is_uploaded": True,
             })
     
     return {"folders": folders}
@@ -97,7 +159,6 @@ async def get_track(track_id: str):
             try:
                 duration_ms = get_file_duration_ms(track["full_path"])
                 track["duration_ms"] = duration_ms
-                # NEW: Also calculate target words
                 if duration_ms and duration_ms > 0:
                     track["target_words"] = calculate_target_words(duration_ms)
                     track["duration_formatted"] = _format_duration(duration_ms)
@@ -115,14 +176,14 @@ async def get_track(track_id: str):
 @router.get("/music/by-path")
 async def get_track_by_path(path: str):
     """Get track details by relative path."""
-    full_path = MUSIC_DIR / path
+    full_path = get_full_path_from_api_path(path)
+    
     if not full_path.exists():
         raise HTTPException(status_code=404, detail="Track not found")
     
     try:
         duration_ms = get_file_duration_ms(str(full_path))
         
-        # NEW: Calculate target words from duration
         target_words = None
         duration_formatted = None
         if duration_ms and duration_ms > 0:
@@ -136,15 +197,15 @@ async def get_track_by_path(path: str):
             "path": path,
             "full_path": str(full_path),
             "duration_ms": duration_ms,
-            "duration_formatted": duration_formatted,  # NEW
-            "target_words": target_words,  # NEW
+            "duration_formatted": duration_formatted,
+            "target_words": target_words,
+            "is_uploaded": path.startswith("__uploaded__/"),
         }
         return track
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error reading track: {str(e)}")
 
 
-# NEW: Quick endpoint to get just duration and target words
 @router.get("/music/duration")
 async def get_track_duration(path: str, wpm: int = 140):
     """
@@ -159,7 +220,8 @@ async def get_track_duration(path: str, wpm: int = 140):
     Returns:
         duration_ms, duration_formatted, target_words
     """
-    full_path = MUSIC_DIR / path
+    full_path = get_full_path_from_api_path(path)
+    
     if not full_path.exists():
         raise HTTPException(status_code=404, detail="Track not found")
     
@@ -184,7 +246,6 @@ async def get_track_duration(path: str, wpm: int = 140):
         raise HTTPException(status_code=500, detail=f"Error reading track: {str(e)}")
 
 
-# NEW: Helper function to format duration
 def _format_duration(duration_ms: int) -> str:
     """Format duration in milliseconds to MM:SS string."""
     if not duration_ms or duration_ms <= 0:
@@ -208,12 +269,12 @@ async def upload_music(file: UploadFile = File(...), folder: str = ""):
             detail=f"Invalid file type. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
         )
     
-    # Determine destination
+    # Save to uploads/music directory (separate from default assets)
     safe_filename = sanitize_filename(Path(file.filename).stem) + ext
     if folder:
-        dest_dir = MUSIC_DIR / sanitize_filename(folder)
+        dest_dir = UPLOADED_MUSIC_DIR / sanitize_filename(folder)
     else:
-        dest_dir = MUSIC_DIR / "uploads"
+        dest_dir = UPLOADED_MUSIC_DIR
     
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest_path = dest_dir / safe_filename
@@ -231,14 +292,32 @@ async def upload_music(file: UploadFile = File(...), folder: str = ""):
             content = await file.read()
             f.write(content)
         
+        # Get duration for the response
+        try:
+            duration_ms = get_file_duration_ms(str(dest_path))
+            duration_formatted = _format_duration(duration_ms) if duration_ms else None
+            target_words = calculate_target_words(duration_ms) if duration_ms else None
+        except Exception:
+            duration_ms = None
+            duration_formatted = None
+            target_words = None
+        
+        # Build the API path
+        relative_path = str(dest_path.relative_to(UPLOADED_MUSIC_DIR))
+        api_path = f"__uploaded__/{relative_path}"
+        
         return {
             "success": True,
             "track": {
                 "id": generate_track_id(dest_path),
                 "name": extract_track_name(dest_path),
                 "filename": dest_path.name,
-                "path": str(dest_path.relative_to(MUSIC_DIR)),
-                "folder": folder or "uploads",
+                "path": api_path,
+                "folder": folder or "Uploaded",
+                "duration_ms": duration_ms,
+                "duration_formatted": duration_formatted,
+                "target_words": target_words,
+                "is_uploaded": True,
             }
         }
     except Exception as e:
@@ -247,13 +326,37 @@ async def upload_music(file: UploadFile = File(...), folder: str = ""):
 
 @router.delete("/music/track/{track_id}")
 async def delete_track(track_id: str):
-    """Delete a music track."""
+    """Delete a music track (only uploaded tracks can be deleted)."""
     tracks = scan_music_library()
     for track in tracks:
         if track["id"] == track_id:
+            # Only allow deleting uploaded tracks
+            if not track.get("is_uploaded"):
+                raise HTTPException(status_code=403, detail="Cannot delete default tracks")
+            
             try:
                 Path(track["full_path"]).unlink()
                 return {"success": True, "deleted": track["filename"]}
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Delete failed: {str(e)}")
     raise HTTPException(status_code=404, detail="Track not found")
+
+
+@router.get("/music/uploaded")
+async def list_uploaded_music():
+    """Get only uploaded music tracks."""
+    tracks = scan_music_library()
+    uploaded = [t for t in tracks if t.get("is_uploaded")]
+    
+    folders = {}
+    for track in uploaded:
+        folder = track["folder"] or "Uploaded"
+        if folder not in folders:
+            folders[folder] = []
+        folders[folder].append(track)
+    
+    return {
+        "tracks": uploaded,
+        "total": len(uploaded),
+        "folders": folders,
+    }
