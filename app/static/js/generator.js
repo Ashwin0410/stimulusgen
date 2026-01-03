@@ -163,6 +163,9 @@ async function loadMusic() {
     const data = await api.music.list();
     const select = document.getElementById("music-track");
 
+    // Store current selection to restore after reload
+    const currentValue = select.value;
+
     select.innerHTML = '<option value="">No music (voice only)</option>';
 
     // Group by folder
@@ -179,6 +182,11 @@ async function loadMusic() {
 
       select.appendChild(optgroup);
     });
+
+    // Restore previous selection if it exists
+    if (currentValue) {
+      select.value = currentValue;
+    }
   } catch (error) {
     console.error("Failed to load music:", error);
   }
@@ -518,6 +526,91 @@ function setupEventListeners() {
         utils.showError("Please select a music track first");
       }
     });
+
+  // NEW: Music upload button click - triggers hidden file input
+  document
+    .getElementById("upload-music-btn")
+    ?.addEventListener("click", () => {
+      document.getElementById("music-upload-input")?.click();
+    });
+
+  // NEW: Music file input change - handles the actual upload
+  document
+    .getElementById("music-upload-input")
+    ?.addEventListener("change", handleMusicUpload);
+}
+
+// NEW: Handle music file upload
+async function handleMusicUpload(e) {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  // Validate file type
+  const allowedTypes = [".mp3", ".wav", ".m4a", ".ogg", ".flac"];
+  const ext = "." + file.name.split(".").pop().toLowerCase();
+  if (!allowedTypes.includes(ext)) {
+    utils.showError(
+      `Invalid file type. Allowed: ${allowedTypes.join(", ")}`
+    );
+    e.target.value = ""; // Reset input
+    return;
+  }
+
+  // Validate file size (max 50MB)
+  const maxSize = 50 * 1024 * 1024;
+  if (file.size > maxSize) {
+    utils.showError("File too large. Maximum size is 50MB.");
+    e.target.value = "";
+    return;
+  }
+
+  const uploadBtn = document.getElementById("upload-music-btn");
+  const originalText = uploadBtn?.textContent;
+  
+  try {
+    if (uploadBtn) {
+      uploadBtn.textContent = "Uploading...";
+      uploadBtn.disabled = true;
+    }
+
+    utils.showInfo(`Uploading ${file.name}...`);
+
+    // Upload the file
+    const result = await api.music.upload(file);
+
+    if (result.success) {
+      // Reload music dropdown to show new track
+      await loadMusic();
+
+      // Select the newly uploaded track
+      const select = document.getElementById("music-track");
+      if (select && result.track?.path) {
+        select.value = result.track.path;
+        // Trigger change event to load duration
+        await onMusicTrackChange(result.track.path);
+      }
+
+      // Show success with duration info
+      let successMsg = `Uploaded: ${result.track.name}`;
+      if (result.track.duration_formatted) {
+        successMsg += ` (${result.track.duration_formatted})`;
+      }
+      utils.showSuccess(successMsg);
+    } else {
+      utils.showError("Upload failed");
+    }
+  } catch (error) {
+    console.error("Music upload failed:", error);
+    utils.showError("Upload failed: " + error.message);
+  } finally {
+    // Reset the file input so the same file can be uploaded again if needed
+    e.target.value = "";
+    
+    if (uploadBtn) {
+      uploadBtn.textContent = originalText || "📁 Upload";
+      uploadBtn.disabled = false;
+    }
+  }
 }
 
 // Calculate target words accounting for voice speed, speech entry, and TTS buffer
