@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Generator - Chills Stimulus Generator</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body data-page="generator">
+    <div class="app-container">
+      <header class="app-header">
+        <div class="app-logo">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+            />
+          </svg>
+          <span>Chills Stimulus Generator</span>
+        </div>
+        <nav class="app-nav">
+          <a href="/">Dashboard</a>
+          <a href="/generator">Generator</a>
+          <a href="/library">Library</a>
+          <a href="/settings">Settings</a>
+        </nav>
+      </header>
+
+      <main class="app-main">
+        <div class="generator-layout">
+          <!-- Left Column: Panels -->
+          <div class="generator-panels">
+            <!-- STEP 1: Music Panel -->
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">🎵 Step 1: Music</h2>
+                <span class="card-toggle">▼</span>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Track</label>
+                  <select id="music-track" class="form-select">
+                    <option value="">No music (voice only)</option>
+                  </select>
+                  <!-- Music Duration Display -->
+                  <div
+                    id="music-duration-display"
+                    style="
+                      font-size: 0.85rem;
+                      color: var(--accent-primary);
+                      margin-top: 0.35rem;
+                      padding: 0.5rem;
+                      background: var(--bg-tertiary);
+                      border-radius: var(--radius-sm);
+                      display: none;
+                    "
+                  ></div>
+                </div>
+
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="slider-label">Volume</span>
+                    <span class="slider-value" id="music-volume-value"
+                      >-6 dB</span
+                    >
+                  </div>
+                  <input type="range" id="music-volume" class="slider-input" />
+                </div>
+
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="slider-label">Speech Entry</span>
+                    <span class="slider-value" id="music-entry-value"
+                      >0 ms</span
+                    >
+                  </div>
+                  <input type="range" id="music-entry" class="slider-input" />
+                  <p
+                    style="
+                      font-size: 0.75rem;
+                      color: var(--text-muted);
+                      margin-top: 0.25rem;
+                    "
+                  >
+                    Delay before voice starts (music plays first)
+                  </p>
+                </div>
+
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="slider-label">Crossfade</span>
+                    <span class="slider-value" id="music-crossfade-value"
+                      >2000 ms</span
+                    >
+                  </div>
+                  <input
+                    type="range"
+                    id="music-crossfade"
+                    class="slider-input"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- STEP 2: Voice Panel -->
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">🎤 Step 2: Voice</h2>
+                <span class="card-toggle">▼</span>
+              </div>
+              <div class="card-body">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label">Model</label>
+                    <select id="voice-model" class="form-select">
+                      <option value="eleven_multilingual_v2">
+                        Multilingual v2
+                      </option>
+                      <option value="eleven_turbo_v2_5">Turbo v2.5</option>
+                      <option value="eleven_flash_v2_5">Flash v2.5</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Voice</label>
+                    <select id="voice-id" class="form-select">
+                      <option value="">Loading voices...</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="slider-label">Stability</span>
+                    <span class="slider-value" id="voice-stability-value"
+                      >0.5</span
+                    >
+                  </div>
+                  <input
+                    type="range"
+                    id="voice-stability"
+                    class="slider-input"
+                  />
+                </div>
+
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="slider-label">Similarity Boost</span>
+                    <span class="slider-value" id="voice-similarity-value"
+                      >0.75</span
+                    >
+                  </div>
+                  <input
+                    type="range"
+                    id="voice-similarity"
+                    class="slider-input"
+                  />
+                </div>
+
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="slider-label">Style Exaggeration</span>
+                    <span class="slider-value" id="voice-style-value">0</span>
+                  </div>
+                  <input type="range" id="voice-style" class="slider-input" />
+                </div>
+
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="slider-label">Speed</span>
+                    <span class="slider-value" id="voice-speed-value"
+                      >1.0x</span
+                    >
+                  </div>
+                  <input type="range" id="voice-speed" class="slider-input" />
+                  <p
+                    style="
+                      font-size: 0.75rem;
+                      color: var(--text-muted);
+                      margin-top: 0.25rem;
+                    "
+                  >
+                    Affects target word count (slower = fewer words)
+                  </p>
+                </div>
+
+                <label class="toggle">
+                  <input
+                    type="checkbox"
+                    id="voice-speaker-boost"
+                    class="toggle-input"
+                    checked
+                  />
+                  <span class="toggle-slider"></span>
+                  <span>Speaker Boost</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- STEP 3: Text Panel -->
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">📝 Step 3: Text</h2>
+                <span class="card-toggle">▼</span>
+              </div>
+              <div class="card-body">
+                <!-- Target Words Display (shown when music is selected) -->
+                <div
+                  id="target-words-info"
+                  style="
+                    display: none;
+                    margin-bottom: 1rem;
+                    padding: 0.75rem;
+                    background: var(--bg-tertiary);
+                    border-radius: var(--radius-md);
+                    border-left: 3px solid var(--accent-primary);
+                  "
+                >
+                  <div style="font-weight: 600; margin-bottom: 0.25rem">
+                    📊 Target Word Count
+                  </div>
+                  <div
+                    id="target-words-display"
+                    style="font-size: 0.9rem; color: var(--text-secondary)"
+                  ></div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Source</label>
+                  <select id="text-source" class="form-select">
+                    <option value="manual">Manual Entry</option>
+                    <option value="llm">Generate with AI</option>
+                  </select>
+                </div>
+
+                <!-- LLM Generation Panel -->
+                <div
+                  id="llm-panel"
+                  style="
+                    display: none;
+                    margin-bottom: 1rem;
+                    padding: 1rem;
+                    background: var(--bg-tertiary);
+                    border-radius: var(--radius-md);
+                  "
+                >
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label">Model</label>
+                      <select id="llm-model" class="form-select"></select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">Style</label>
+                      <select id="llm-style" class="form-select"></select>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Template</label>
+                    <select id="llm-template" class="form-select"></select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">Topic</label>
+                    <input
+                      type="text"
+                      id="llm-topic"
+                      class="form-input"
+                      placeholder="e.g., the beauty of human connection"
+                    />
+                  </div>
+
+                  <!-- Target Words Input -->
+                  <div
+                    class="form-group"
+                    style="
+                      margin-top: 1rem;
+                      padding-top: 1rem;
+                      border-top: 1px solid var(--border-color);
+                    "
+                  >
+                    <label class="form-label">Target Word Count</label>
+                    <div
+                      style="display: flex; gap: 0.5rem; align-items: center"
+                    >
+                      <input
+                        type="number"
+                        id="target-words"
+                        class="form-input"
+                        placeholder="Auto from music"
+                        min="50"
+                        max="1000"
+                        style="flex: 1"
+                      />
+                      <button
+                        type="button"
+                        id="auto-calc-words-btn"
+                        class="btn btn-secondary btn-sm"
+                        title="Recalculate from music track"
+                      >
+                        🔄 Recalc
+                      </button>
+                    </div>
+                    <p
+                      style="
+                        font-size: 0.75rem;
+                        color: var(--text-muted);
+                        margin-top: 0.25rem;
+                      "
+                    >
+                      Auto-calculated from music duration, voice speed, and
+                      speech entry.
+                    </p>
+                  </div>
+
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span class="slider-label">Temperature</span>
+                      <span class="slider-value" id="llm-temperature-value"
+                        >0.7</span
+                      >
+                    </div>
+                    <input
+                      type="range"
+                      id="llm-temperature"
+                      class="slider-input"
+                      min="0"
+                      max="2"
+                      step="0.1"
+                      value="0.7"
+                    />
+                  </div>
+                  <button
+                    id="generate-text-btn"
+                    class="btn btn-secondary btn-block"
+                  >
+                    ✨ Generate Text
+                  </button>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Speech Text</label>
+                  <textarea
+                    id="speech-text"
+                    class="form-textarea"
+                    rows="8"
+                    placeholder="Enter the text to be spoken..."
+                  ></textarea>
+                  <div
+                    id="word-count"
+                    style="
+                      font-size: 0.8rem;
+                      color: var(--text-muted);
+                      margin-top: 0.25rem;
+                    "
+                  >
+                    0 words • ~0:00
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Mix Panel -->
+            <div class="card collapsed">
+              <div class="card-header">
+                <h2 class="card-title">🎛️ Mix</h2>
+                <span class="card-toggle">▼</span>
+              </div>
+              <div class="card-body">
+                <div class="form-row">
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span class="slider-label">Reverb Mix</span>
+                      <span class="slider-value" id="mix-reverb-value"
+                        >25%</span
+                      >
+                    </div>
+                    <input type="range" id="mix-reverb" class="slider-input" />
+                  </div>
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span class="slider-label">Reverb Decay</span>
+                      <span class="slider-value" id="mix-reverb-decay-value"
+                        >1.5s</span
+                      >
+                    </div>
+                    <input
+                      type="range"
+                      id="mix-reverb-decay"
+                      class="slider-input"
+                    />
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span class="slider-label">Compression</span>
+                      <span class="slider-value" id="mix-compression-value"
+                        >2:1</span
+                      >
+                    </div>
+                    <input
+                      type="range"
+                      id="mix-compression"
+                      class="slider-input"
+                    />
+                  </div>
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span class="slider-label">De-esser</span>
+                      <span class="slider-value" id="mix-deesser-value"
+                        >-6 dB</span
+                      >
+                    </div>
+                    <input type="range" id="mix-deesser" class="slider-input" />
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span class="slider-label">EQ Low Cut</span>
+                      <span class="slider-value" id="mix-eq-low-value"
+                        >80 Hz</span
+                      >
+                    </div>
+                    <input type="range" id="mix-eq-low" class="slider-input" />
+                  </div>
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span class="slider-label">EQ High Cut</span>
+                      <span class="slider-value" id="mix-eq-high-value"
+                        >12000 Hz</span
+                      >
+                    </div>
+                    <input type="range" id="mix-eq-high" class="slider-input" />
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span class="slider-label">Pitch Shift</span>
+                      <span class="slider-value" id="mix-pitch-value"
+                        >0 st</span
+                      >
+                    </div>
+                    <input type="range" id="mix-pitch" class="slider-input" />
+                  </div>
+                  <div class="slider-group">
+                    <div class="slider-header">
+                      <span class="slider-label">Normalization</span>
+                      <span class="slider-value" id="mix-normalization-value"
+                        >-16 LUFS</span
+                      >
+                    </div>
+                    <input
+                      type="range"
+                      id="mix-normalization"
+                      class="slider-input"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Prosody Panel -->
+            <div class="card collapsed">
+              <div class="card-header">
+                <h2 class="card-title">🎭 Prosody Transfer</h2>
+                <span class="card-toggle">▼</span>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Reference</label>
+                  <select id="prosody-reference" class="form-select">
+                    <option value="none">None</option>
+                  </select>
+                </div>
+
+                <div class="slider-group">
+                  <div class="slider-header">
+                    <span class="slider-label">Intensity</span>
+                    <span class="slider-value" id="prosody-intensity-value"
+                      >0</span
+                    >
+                  </div>
+                  <input
+                    type="range"
+                    id="prosody-intensity"
+                    class="slider-input"
+                  />
+                </div>
+
+                <p
+                  style="
+                    font-size: 0.8rem;
+                    color: var(--text-muted);
+                    margin-top: 0.5rem;
+                  "
+                >
+                  Prosody transfer applies pitch and rhythm characteristics from
+                  the reference audio to your generated speech.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Sidebar -->
+          <div class="generator-sidebar">
+            <!-- Stimulus Info -->
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">Stimulus</h2>
+              </div>
+              <div class="card-body">
+                <div class="form-group">
+                  <label class="form-label">Stimulus ID</label>
+                  <input
+                    type="text"
+                    id="stimulus-id"
+                    class="form-input"
+                    value="STIM_001"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label">Template</label>
+                  <select id="template-select" class="form-select">
+                    <option value="">Load a template...</option>
+                  </select>
+                </div>
+
+                <button
+                  id="save-template-btn"
+                  class="btn btn-secondary btn-sm"
+                  style="margin-top: 0.5rem"
+                >
+                  Save as Template
+                </button>
+              </div>
+            </div>
+
+            <!-- Generate Actions -->
+            <div class="card">
+              <div class="card-body">
+                <button
+                  id="generate-btn"
+                  class="btn btn-primary btn-lg btn-block"
+                >
+                  🎧 Generate Audio
+                </button>
+
+                <div
+                  id="generation-progress"
+                  style="display: none; margin-top: 1rem"
+                ></div>
+
+                <button
+                  id="save-btn"
+                  class="btn btn-secondary btn-block"
+                  style="margin-top: 0.75rem"
+                >
+                  💾 Save Parameters
+                </button>
+              </div>
+            </div>
+
+            <!-- Audio Preview -->
+            <div class="card">
+              <div class="card-header">
+                <h2 class="card-title">Preview</h2>
+              </div>
+              <div class="card-body" id="audio-preview">
+                <div class="empty-state">
+                  <p>Generate audio to preview</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/generator.js"></script>
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

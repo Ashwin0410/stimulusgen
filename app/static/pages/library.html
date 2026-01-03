@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Library - Chills Stimulus Generator</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body data-page="library">
+    <div class="app-container">
+      <header class="app-header">
+        <div class="app-logo">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+            />
+          </svg>
+          <span>Chills Stimulus Generator</span>
+        </div>
+        <nav class="app-nav">
+          <a href="/">Dashboard</a>
+          <a href="/generator">Generator</a>
+          <a href="/library">Library</a>
+          <a href="/settings">Settings</a>
+        </nav>
+      </header>
+
+      <main class="app-main">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+          "
+        >
+          <h1>Stimulus Library</h1>
+          <div style="display: flex; gap: 0.5rem">
+            <button id="export-csv" class="btn btn-secondary">
+              Export CSV
+            </button>
+            <button id="export-json" class="btn btn-secondary">
+              Export JSON
+            </button>
+            <a href="/generator" class="btn btn-primary">+ New Stimulus</a>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.5rem">
+          <div class="card-body">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap">
+              <div
+                class="form-group"
+                style="flex: 1; min-width: 200px; margin-bottom: 0"
+              >
+                <input
+                  type="text"
+                  id="library-search"
+                  class="form-input"
+                  placeholder="Search stimuli..."
+                />
+              </div>
+              <div
+                class="form-group"
+                style="min-width: 150px; margin-bottom: 0"
+              >
+                <select id="status-filter" class="form-select">
+                  <option value="">All Status</option>
+                  <option value="draft">Draft</option>
+                  <option value="generating">Generating</option>
+                  <option value="generated">Generated</option>
+                  <option value="failed">Failed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="library-container">
+          <div class="loading">
+            <div class="spinner"></div>
+            <span class="loading-text">Loading stimuli...</span>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

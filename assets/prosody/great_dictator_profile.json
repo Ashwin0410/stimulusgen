@@ -1,0 +1,20 @@
+{
+  "duration_ms": 0,
+  "pitch_mean": 0,
+  "pitch_std": 0,
+  "pitch_min": 0,
+  "pitch_max": 0,
+  "pitch_range": 0,
+  "energy_mean": 0,
+  "energy_std": 0,
+  "energy_min": 0,
+  "energy_max": 0,
+  "pitch_contour": [],
+  "energy_contour": [],
+  "trajectory": null,
+  "num_voiced_frames": 0,
+  "voiced_ratio": 0,
+  "source_file": "C:\\Users\\asai0\\OneDrive\\Desktop\\stimulus-generator\\assets\\prosody\\great_dictator.m4a",
+  "id": "great_dictator",
+  "name": "Great Dictator (Chaplin)"
+}

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings - Chills Stimulus Generator</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body data-page="settings">
+    <div class="app-container">
+      <header class="app-header">
+        <div class="app-logo">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+            />
+          </svg>
+          <span>Chills Stimulus Generator</span>
+        </div>
+        <nav class="app-nav">
+          <a href="/">Dashboard</a>
+          <a href="/generator">Generator</a>
+          <a href="/library">Library</a>
+          <a href="/settings">Settings</a>
+        </nav>
+      </header>
+
+      <main class="app-main">
+        <h1 style="margin-bottom: 1.5rem">Settings</h1>
+
+        <div class="card" style="margin-bottom: 1.5rem">
+          <div class="card-header">
+            <h2 class="card-title">API Status</h2>
+          </div>
+          <div class="card-body">
+            <div style="display: grid; gap: 1rem">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  padding: 0.75rem;
+                  background: var(--bg-tertiary);
+                  border-radius: var(--radius-md);
+                "
+              >
+                <div>
+                  <strong>ElevenLabs</strong>
+                  <div style="font-size: 0.85rem; color: var(--text-muted)">
+                    Text-to-Speech API
+                  </div>
+                </div>
+                <div id="elevenlabs-status">
+                  <span class="badge badge-draft">Checking...</span>
+                </div>
+              </div>
+
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                  padding: 0.75rem;
+                  background: var(--bg-tertiary);
+                  border-radius: var(--radius-md);
+                "
+              >
+                <div>
+                  <strong>LLM (Claude/OpenAI)</strong>
+                  <div style="font-size: 0.85rem; color: var(--text-muted)">
+                    Text Generation API
+                  </div>
+                </div>
+                <div id="llm-status">
+                  <span class="badge badge-draft">Checking...</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.5rem">
+          <div class="card-header">
+            <h2 class="card-title">Prosody</h2>
+          </div>
+          <div class="card-body">
+            <p style="color: var(--text-secondary); margin-bottom: 1rem">
+              Pre-extract prosody profiles from all reference audio files for
+              faster processing.
+            </p>
+            <button id="preload-prosody" class="btn btn-secondary">
+              Preload Prosody Profiles
+            </button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.5rem">
+          <div class="card-header">
+            <h2 class="card-title">About</h2>
+          </div>
+          <div class="card-body">
+            <p style="color: var(--text-secondary); margin-bottom: 1rem">
+              <strong>Chills Stimulus Generator</strong> is a tool for creating
+              and testing audio stimuli designed to induce chills (frisson).
+            </p>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem">
+              It combines AI-generated text, professional text-to-speech,
+              background music, and advanced audio processing to systematically
+              explore what makes audio emotionally powerful.
+            </p>
+            <div style="font-size: 0.85rem; color: var(--text-muted)">
+              <p>Version: 1.0.0</p>
+              <p>Built for chills research</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Configuration Notes</h2>
+          </div>
+          <div class="card-body">
+            <p style="color: var(--text-secondary); margin-bottom: 1rem">
+              API keys are configured via environment variables in the
+              <code>.env</code> file:
+            </p>
+            <pre
+              style="
+                background: var(--bg-tertiary);
+                padding: 1rem;
+                border-radius: var(--radius-md);
+                font-size: 0.85rem;
+                overflow-x: auto;
+              "
+            >
+# ElevenLabs
+ELEVENLABS_API_KEY=your_key_here
+
+# LLM (at least one required)
+ANTHROPIC_API_KEY=your_key_here
+OPENAI_API_KEY=your_key_here
+
+# FFmpeg (optional, auto-detected)
+FFMPEG_BIN=/path/to/ffmpeg</pre
+            >
+            <p
+              style="
+                color: var(--text-muted);
+                font-size: 0.85rem;
+                margin-top: 1rem;
+              "
+            >
+              Restart the server after changing environment variables.
+            </p>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>

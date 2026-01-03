@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chills Stimulus Generator</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body data-page="index">
+    <div class="app-container">
+      <header class="app-header">
+        <div class="app-logo">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+            />
+          </svg>
+          <span>Chills Stimulus Generator</span>
+        </div>
+        <nav class="app-nav">
+          <a href="/">Dashboard</a>
+          <a href="/generator">Generator</a>
+          <a href="/library">Library</a>
+          <a href="/settings">Settings</a>
+        </nav>
+      </header>
+
+      <main class="app-main">
+        <h1 style="margin-bottom: 1.5rem">Dashboard</h1>
+
+        <div class="dashboard-stats">
+          <div class="stat-card">
+            <div class="stat-value" id="total-stimuli">-</div>
+            <div class="stat-label">Total Stimuli</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="generated-count">-</div>
+            <div class="stat-label">Generated</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="total-voices">-</div>
+            <div class="stat-label">Available Voices</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="total-tracks">-</div>
+            <div class="stat-label">Music Tracks</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Quick Actions</h2>
+          </div>
+          <div class="card-body">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap">
+              <a href="/generator" class="btn btn-primary btn-lg">
+                + New Stimulus
+              </a>
+              <a href="/library" class="btn btn-secondary btn-lg">
+                View Library
+              </a>
+              <a href="/api/export/csv" class="btn btn-secondary btn-lg">
+                Export CSV
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem">
+          <div class="card-header">
+            <h2 class="card-title">Recent Stimuli</h2>
+          </div>
+          <div class="card-body">
+            <div class="table-container">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Status</th>
+                    <th>Text</th>
+                    <th>Duration</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="recent-stimuli">
+                  <tr>
+                    <td colspan="6" class="loading">
+                      <div class="spinner"></div>
+                      <span class="loading-text">Loading...</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>
