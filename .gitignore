@@ -6,7 +6,6 @@ venv/
 data/
 uploads/
 *.db
-assets/music/tracks/
 assets/prosody/*.m4a
 assets/prosody/*.mp3
 assets/prosody/*.wav
