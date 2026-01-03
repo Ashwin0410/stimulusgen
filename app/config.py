@@ -10,10 +10,20 @@ IS_RENDER = os.getenv("RENDER", "false").lower() == "true"
 
 # Base paths
 BASE_DIR = Path(__file__).resolve().parent.parent
-DATA_DIR = BASE_DIR / "data"
+
+# On Render, use persistent disk for data that needs to survive deploys
+if IS_RENDER:
+    PERSISTENT_DIR = Path("/data")
+    DATA_DIR = PERSISTENT_DIR / "data"
+    UPLOADS_DIR = PERSISTENT_DIR / "uploads"
+    OUTPUTS_DIR = PERSISTENT_DIR / "outputs"
+else:
+    DATA_DIR = BASE_DIR / "data"
+    UPLOADS_DIR = BASE_DIR / "uploads"
+    OUTPUTS_DIR = DATA_DIR / "outputs"
+
+# Assets stay in app directory (bundled with code)
 ASSETS_DIR = BASE_DIR / "assets"
-UPLOADS_DIR = BASE_DIR / "uploads"
-OUTPUTS_DIR = DATA_DIR / "outputs"
 
 # Ensure directories exist
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -56,7 +66,7 @@ else:
     else:
         FFPROBE_BIN = shutil.which("ffprobe") or "ffprobe"
 
-# Database
+# Database - stored in DATA_DIR (persistent on Render)
 DATABASE_PATH = DATA_DIR / "stimuli.db"
 
 # Debug
