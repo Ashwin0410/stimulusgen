@@ -38,9 +38,27 @@
               <div class="card-body">
                 <div class="form-group">
                   <label class="form-label">Track</label>
-                  <select id="music-track" class="form-select">
-                    <option value="">No music (voice only)</option>
-                  </select>
+                  <!-- Music Track Selection with Upload Button -->
+                  <div style="display: flex; gap: 0.5rem; align-items: center">
+                    <select id="music-track" class="form-select" style="flex: 1">
+                      <option value="">No music (voice only)</option>
+                    </select>
+                    <button
+                      type="button"
+                      id="upload-music-btn"
+                      class="btn btn-secondary btn-sm"
+                      title="Upload your own music"
+                    >
+                      📁 Upload
+                    </button>
+                    <!-- Hidden file input for music upload -->
+                    <input
+                      type="file"
+                      id="music-upload-input"
+                      accept=".mp3,.wav,.m4a,.ogg,.flac"
+                      hidden
+                    />
+                  </div>
                   <!-- Music Duration Display -->
                   <div
                     id="music-duration-display"
