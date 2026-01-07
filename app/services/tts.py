@@ -49,6 +49,11 @@ def _split_text_into_chunks(text: str, max_chars: int = DEFAULT_MAX_CHARS) -> Li
     return chunks
 
 
+def _is_v3_model(model: str) -> bool:
+    """Check if the model is an ElevenLabs v3 model."""
+    return model.startswith("eleven_v3")
+
+
 def _synth_chunk(
     text: str,
     voice_id: str,
@@ -57,6 +62,7 @@ def _synth_chunk(
     similarity_boost: float = 0.75,
     style: float = 0.0,
     speaker_boost: bool = True,
+    speed: float = 1.0,
     timeout: int = 120,
     max_retries: int = 3,
     backoff_base: float = 1.5,
@@ -68,16 +74,30 @@ def _synth_chunk(
         "accept": "audio/mpeg",
         "Content-Type": "application/json",
     }
-    payload = {
-        "text": text,
-        "model_id": model,
-        "voice_settings": {
+    
+    # Build voice_settings based on model type
+    # v3 models ONLY support stability - other params cause 400 Bad Request
+    if _is_v3_model(model):
+        voice_settings = {
+            "stability": stability,
+        }
+    else:
+        voice_settings = {
             "stability": stability,
             "similarity_boost": similarity_boost,
             "style": style,
             "use_speaker_boost": speaker_boost,
-        },
+        }
+    
+    payload = {
+        "text": text,
+        "model_id": model,
+        "voice_settings": voice_settings,
     }
+    
+    # v3 models support speed parameter directly in the API payload
+    if _is_v3_model(model) and speed != 1.0:
+        payload["speed"] = speed
 
     last_exc = None
 
@@ -180,6 +200,7 @@ def synthesize_speech(
                 similarity_boost=similarity_boost,
                 style=style,
                 speaker_boost=speaker_boost,
+                speed=speed,
             )
             segs.append(seg)
             
@@ -193,7 +214,9 @@ def synthesize_speech(
     for s in segs[1:]:
         full += s
 
-    if speed != 1.0 and 0.5 <= speed <= 2.0:
+    # Only apply pydub speed adjustment for non-v3 models
+    # v3 models handle speed directly via API
+    if not _is_v3_model(model) and speed != 1.0 and 0.5 <= speed <= 2.0:
         full = full._spawn(full.raw_data, overrides={
             "frame_rate": int(full.frame_rate * speed)
         }).set_frame_rate(44100)
