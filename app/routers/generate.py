@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import Optional
 
-from app.config import ASSETS_DIR, OUTPUTS_DIR
+from app.config import ASSETS_DIR, OUTPUTS_DIR, UPLOADS_DIR
 from app.models.schemas import StimulusCreate, GenerateRequest, GenerateResponse
 from app.db.crud import (
     get_stimulus, 
@@ -15,12 +15,13 @@ from app.db.crud import (
 )
 from app.services.tts import synthesize_speech
 from app.services.mix import mix_audio, mix_voice_only
-from app.services.prosody import apply_prosody
+from app.services.prosody import apply_prosody, apply_prosody_with_diagnostics
 from app.utils.naming import generate_output_filename
 
 router = APIRouter()
 
 MUSIC_DIR = ASSETS_DIR / "music" / "tracks"
+UPLOADED_MUSIC_DIR = UPLOADS_DIR / "music"
 
 
 class GenerateFromParamsRequest(BaseModel):
@@ -71,6 +72,102 @@ def _get_file_size(path: str) -> int:
         return 0
 
 
+def _get_music_path(track: str) -> Optional[Path]:
+    """
+    Get the full path to a music track.
+    Handles both default tracks and uploaded tracks.
+    
+    Args:
+        track: Track path (may be prefixed with __uploaded__/)
+    
+    Returns:
+        Path object if found, None otherwise
+    """
+    if not track:
+        return None
+    
+    if track.startswith("__uploaded__/"):
+        # Uploaded track
+        relative_path = track.replace("__uploaded__/", "", 1)
+        music_path = UPLOADED_MUSIC_DIR / relative_path
+    else:
+        # Default track
+        music_path = MUSIC_DIR / track
+    
+    if music_path.exists():
+        return music_path
+    
+    return None
+
+
+def _apply_prosody_with_logging(
+    voice_path: str,
+    reference: str,
+    intensity: float,
+    stimulus_id: str,
+) -> str:
+    """
+    Apply prosody transfer with detailed logging and diagnostics.
+    
+    Args:
+        voice_path: Path to input voice audio
+        reference: Prosody reference ID
+        intensity: Transfer intensity (0.0 to 1.0)
+        stimulus_id: Stimulus ID for logging
+    
+    Returns:
+        Path to output audio (modified or original if skipped/failed)
+    """
+    print(f"[Generate:{stimulus_id}] ===== PROSODY TRANSFER =====")
+    print(f"[Generate:{stimulus_id}] Reference: {reference}")
+    print(f"[Generate:{stimulus_id}] Intensity: {intensity}")
+    print(f"[Generate:{stimulus_id}] Input: {voice_path}")
+    print(f"[Generate:{stimulus_id}] Input size: {_get_file_size(voice_path)} bytes")
+    
+    # Use the enhanced diagnostics version
+    result = apply_prosody_with_diagnostics(
+        voice_path=voice_path,
+        reference=reference,
+        intensity=intensity,
+    )
+    
+    output_path = result.get("output_path", voice_path)
+    diagnostics = result.get("diagnostics", {})
+    
+    # Log diagnostics
+    print(f"[Generate:{stimulus_id}] Output: {output_path}")
+    print(f"[Generate:{stimulus_id}] Output size: {_get_file_size(output_path)} bytes")
+    
+    if result.get("skipped"):
+        print(f"[Generate:{stimulus_id}] SKIPPED: {diagnostics.get('skip_reason', 'unknown reason')}")
+    elif result.get("error"):
+        print(f"[Generate:{stimulus_id}] ERROR: {result['error']}")
+    elif result.get("applied"):
+        # Log pitch changes
+        source_mean = diagnostics.get("source_pitch_mean")
+        output_mean = diagnostics.get("output_pitch_mean")
+        target_mean = diagnostics.get("target_pitch_mean")
+        pitch_change = diagnostics.get("pitch_change")
+        std_change = diagnostics.get("std_change")
+        
+        print(f"[Generate:{stimulus_id}] APPLIED SUCCESSFULLY:")
+        if source_mean and output_mean:
+            print(f"[Generate:{stimulus_id}]   Pitch: {source_mean:.1f}Hz → {output_mean:.1f}Hz (target: {target_mean:.1f}Hz)")
+        if pitch_change is not None:
+            print(f"[Generate:{stimulus_id}]   Change: {pitch_change:+.1f}Hz mean, {std_change:+.1f}Hz std")
+        
+        if diagnostics.get("transfer_successful"):
+            print(f"[Generate:{stimulus_id}]   ✅ Prosody transfer verified successful")
+        else:
+            print(f"[Generate:{stimulus_id}]   ⚠️ Warning: {diagnostics.get('warning', 'Transfer may not be effective')}")
+    else:
+        print(f"[Generate:{stimulus_id}] UNKNOWN STATUS")
+    
+    print(f"[Generate:{stimulus_id}] ===== PROSODY TRANSFER END =====")
+    
+    return output_path
+
+
 @router.post("/generate", response_model=GenerateResponse)
 async def generate_stimulus(request: GenerateRequest):
     """Generate audio for an existing stimulus."""
@@ -89,7 +186,7 @@ async def generate_stimulus(request: GenerateRequest):
         update_stimulus_status(request.stimulus_id, "generating")
         
         # Step 1: Synthesize speech
-        print(f"[Generate] Synthesizing speech for {request.stimulus_id}")
+        print(f"[Generate:{request.stimulus_id}] Step 1: Synthesizing speech")
         voice_path = synthesize_speech(
             text=stimulus.text.speech_text,
             voice_id=stimulus.voice.voice_id,
@@ -100,47 +197,30 @@ async def generate_stimulus(request: GenerateRequest):
             speaker_boost=stimulus.voice.speaker_boost,
             speed=stimulus.voice.speed,
         )
-        print(f"[Generate] TTS complete: {voice_path} ({_get_file_size(voice_path)} bytes)")
+        print(f"[Generate:{request.stimulus_id}] TTS complete: {voice_path} ({_get_file_size(voice_path)} bytes)")
         
         # Step 2: Apply prosody transfer if requested
+        print(f"[Generate:{request.stimulus_id}] Step 2: Prosody transfer")
         if stimulus.prosody.reference != "none" and stimulus.prosody.intensity > 0:
-            original_voice_path = voice_path
-            original_size = _get_file_size(original_voice_path)
-            
-            print(f"[Generate] ===== PROSODY TRANSFER =====")
-            print(f"[Generate] Reference: {stimulus.prosody.reference}")
-            print(f"[Generate] Intensity: {stimulus.prosody.intensity}")
-            print(f"[Generate] Input path: {original_voice_path}")
-            print(f"[Generate] Input size: {original_size} bytes")
-            
-            voice_path = apply_prosody(
+            voice_path = _apply_prosody_with_logging(
                 voice_path=voice_path,
                 reference=stimulus.prosody.reference,
                 intensity=stimulus.prosody.intensity,
+                stimulus_id=request.stimulus_id,
             )
-            
-            new_size = _get_file_size(voice_path)
-            print(f"[Generate] Output path: {voice_path}")
-            print(f"[Generate] Output size: {new_size} bytes")
-            
-            # Verify prosody was actually applied
-            if original_voice_path == voice_path:
-                print(f"[Generate] WARNING: Prosody returned SAME path! Transfer may have failed.")
-            else:
-                print(f"[Generate] SUCCESS: Prosody returned different path (transfer applied)")
-            print(f"[Generate] ===== PROSODY TRANSFER END =====")
         else:
-            print(f"[Generate] Prosody skipped: reference={stimulus.prosody.reference}, intensity={stimulus.prosody.intensity}")
+            print(f"[Generate:{request.stimulus_id}] Prosody skipped: reference={stimulus.prosody.reference}, intensity={stimulus.prosody.intensity}")
         
         # Step 3: Mix with music or export voice only
+        print(f"[Generate:{request.stimulus_id}] Step 3: Mixing audio")
         output_filename = generate_output_filename(request.stimulus_id)
         
         if stimulus.music.track:
-            music_path = MUSIC_DIR / stimulus.music.track
-            if not music_path.exists():
+            music_path = _get_music_path(stimulus.music.track)
+            if not music_path:
                 raise HTTPException(status_code=400, detail=f"Music track not found: {stimulus.music.track}")
             
-            print(f"[Generate] Mixing with music: {stimulus.music.track}")
+            print(f"[Generate:{request.stimulus_id}] Mixing with music: {stimulus.music.track}")
             output_path, duration_ms = mix_audio(
                 voice_path=voice_path,
                 music_path=str(music_path),
@@ -158,7 +238,7 @@ async def generate_stimulus(request: GenerateRequest):
                 normalization_lufs=stimulus.mix.normalization_lufs,
             )
         else:
-            print(f"[Generate] Exporting voice only (no music)")
+            print(f"[Generate:{request.stimulus_id}] Exporting voice only (no music)")
             output_path, duration_ms = mix_voice_only(
                 voice_path=voice_path,
                 output_filename=output_filename,
@@ -180,7 +260,7 @@ async def generate_stimulus(request: GenerateRequest):
             duration_ms=duration_ms
         )
         
-        print(f"[Generate] Complete: {output_filename}, {duration_ms}ms")
+        print(f"[Generate:{request.stimulus_id}] ✅ Complete: {output_filename}, {duration_ms}ms")
         
         return GenerateResponse(
             stimulus_id=request.stimulus_id,
@@ -190,7 +270,7 @@ async def generate_stimulus(request: GenerateRequest):
         )
         
     except Exception as e:
-        print(f"[Generate] Error: {e}")
+        print(f"[Generate:{request.stimulus_id}] ❌ Error: {e}")
         traceback.print_exc()
         update_stimulus_status(request.stimulus_id, "failed")
         return GenerateResponse(
@@ -252,7 +332,7 @@ async def generate_direct(request: GenerateFromParamsRequest):
             update_stimulus_status(stimulus_id, "generating")
         
         # Step 1: Synthesize
-        print(f"[Generate] Synthesizing speech for {stimulus_id}")
+        print(f"[Generate:{stimulus_id}] Step 1: Synthesizing speech")
         voice_path = synthesize_speech(
             text=request.speech_text,
             voice_id=request.voice_id,
@@ -263,47 +343,30 @@ async def generate_direct(request: GenerateFromParamsRequest):
             speaker_boost=request.voice_speaker_boost,
             speed=request.voice_speed,
         )
-        print(f"[Generate] TTS complete: {voice_path} ({_get_file_size(voice_path)} bytes)")
+        print(f"[Generate:{stimulus_id}] TTS complete: {voice_path} ({_get_file_size(voice_path)} bytes)")
         
         # Step 2: Prosody
+        print(f"[Generate:{stimulus_id}] Step 2: Prosody transfer")
         if request.prosody_reference != "none" and request.prosody_intensity > 0:
-            original_voice_path = voice_path
-            original_size = _get_file_size(original_voice_path)
-            
-            print(f"[Generate] ===== PROSODY TRANSFER =====")
-            print(f"[Generate] Reference: {request.prosody_reference}")
-            print(f"[Generate] Intensity: {request.prosody_intensity}")
-            print(f"[Generate] Input path: {original_voice_path}")
-            print(f"[Generate] Input size: {original_size} bytes")
-            
-            voice_path = apply_prosody(
+            voice_path = _apply_prosody_with_logging(
                 voice_path=voice_path,
                 reference=request.prosody_reference,
                 intensity=request.prosody_intensity,
+                stimulus_id=stimulus_id,
             )
-            
-            new_size = _get_file_size(voice_path)
-            print(f"[Generate] Output path: {voice_path}")
-            print(f"[Generate] Output size: {new_size} bytes")
-            
-            # Verify prosody was actually applied
-            if original_voice_path == voice_path:
-                print(f"[Generate] WARNING: Prosody returned SAME path! Transfer may have failed.")
-            else:
-                print(f"[Generate] SUCCESS: Prosody returned different path (transfer applied)")
-            print(f"[Generate] ===== PROSODY TRANSFER END =====")
         else:
-            print(f"[Generate] Prosody skipped: reference={request.prosody_reference}, intensity={request.prosody_intensity}")
+            print(f"[Generate:{stimulus_id}] Prosody skipped: reference={request.prosody_reference}, intensity={request.prosody_intensity}")
         
         # Step 3: Mix
+        print(f"[Generate:{stimulus_id}] Step 3: Mixing audio")
         output_filename = generate_output_filename(stimulus_id)
         
         if request.music_track:
-            music_path = MUSIC_DIR / request.music_track
-            if not music_path.exists():
+            music_path = _get_music_path(request.music_track)
+            if not music_path:
                 raise HTTPException(status_code=400, detail=f"Music not found: {request.music_track}")
             
-            print(f"[Generate] Mixing with music: {request.music_track}")
+            print(f"[Generate:{stimulus_id}] Mixing with music: {request.music_track}")
             output_path, duration_ms = mix_audio(
                 voice_path=voice_path,
                 music_path=str(music_path),
@@ -321,7 +384,7 @@ async def generate_direct(request: GenerateFromParamsRequest):
                 normalization_lufs=request.normalization_lufs,
             )
         else:
-            print(f"[Generate] Voice only (no music)")
+            print(f"[Generate:{stimulus_id}] Voice only (no music)")
             output_path, duration_ms = mix_voice_only(
                 voice_path=voice_path,
                 output_filename=output_filename,
@@ -338,7 +401,7 @@ async def generate_direct(request: GenerateFromParamsRequest):
         if request.save_to_db:
             update_stimulus_status(stimulus_id, "generated", output_filename, duration_ms)
         
-        print(f"[Generate] Complete: {output_filename}, {duration_ms}ms")
+        print(f"[Generate:{stimulus_id}] ✅ Complete: {output_filename}, {duration_ms}ms")
         
         return GenerateResponse(
             stimulus_id=stimulus_id,
@@ -348,7 +411,7 @@ async def generate_direct(request: GenerateFromParamsRequest):
         )
         
     except Exception as e:
-        print(f"[Generate] Error: {e}")
+        print(f"[Generate:{stimulus_id}] ❌ Error: {e}")
         traceback.print_exc()
         if request.save_to_db:
             update_stimulus_status(stimulus_id, "failed")
