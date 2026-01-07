@@ -7,8 +7,15 @@ let isEditing = false;
 let currentTargetWords = null; // Store calculated target words from music
 let currentMusicDuration = null; // Store music duration in ms
 
-// Safety buffer for TTS timing (accounts for pauses, natural speech rhythm)
-const TTS_SAFETY_BUFFER = 0.85; // Reduce target by 15%
+// =============================================================================
+// TTS TIMING CONFIGURATION
+// =============================================================================
+// Production-tested value: 102 WPM (1.7 words per second)
+// This accounts for [pause] tokens, natural pauses, and emotional delivery.
+// With accurate WPM, we only need a small safety buffer (3%).
+// =============================================================================
+const BASE_TTS_WPM = 102; // Production-tested: matches Journey app
+const TTS_SAFETY_BUFFER = 0.97; // Small 3% buffer since WPM is accurate
 
 async function initGenerator() {
   // Check if editing existing stimulus
@@ -642,23 +649,16 @@ function calculateTargetWordsFromDuration(durationMs) {
     return null;
   }
 
-  // Base WPM (words per minute at 1.0x speed)
-  const baseWpm = 140;
-
   // Adjust WPM based on voice speed
   // Faster speed (>1.0) = more words per minute = more words fit
   // Slower speed (<1.0) = fewer words per minute = fewer words fit
-  const adjustedWpm = baseWpm * voiceSpeed;
+  const adjustedWpm = BASE_TTS_WPM * voiceSpeed;
 
   // Calculate raw target words
   const effectiveDurationMinutes = effectiveDurationMs / 1000 / 60;
   let targetWords = Math.round(effectiveDurationMinutes * adjustedWpm);
 
-  // Apply safety buffer for [pause] markers, natural TTS pacing, etc.
-  // This reduces the target by ~15% to account for:
-  // - [pause] markers adding silence
-  // - ElevenLabs natural sentence pauses
-  // - Breathing pauses between phrases
+  // Apply safety buffer (small 3% since WPM is now accurate)
   targetWords = Math.round(targetWords * TTS_SAFETY_BUFFER);
 
   console.log(
@@ -766,8 +766,7 @@ function updateTargetWordsDisplay() {
     );
 
     // Estimate duration based on target words and speed
-    const baseWpm = 140;
-    const adjustedWpm = baseWpm * voiceSpeed;
+    const adjustedWpm = BASE_TTS_WPM * voiceSpeed;
     const estimatedMinutes = currentTargetWords / adjustedWpm;
     const estimatedMs = estimatedMinutes * 60 * 1000;
 
@@ -796,8 +795,7 @@ function updateTargetWordsDisplay() {
     const voiceSpeed = parseFloat(
       document.getElementById("voice-speed")?.value || 1.0
     );
-    const baseWpm = 140;
-    const adjustedWpm = baseWpm * voiceSpeed;
+    const adjustedWpm = BASE_TTS_WPM * voiceSpeed;
     const estimatedMinutes = currentTargetWords / adjustedWpm;
     const estimatedMs = estimatedMinutes * 60 * 1000;
 
@@ -827,8 +825,7 @@ function updateWordCount() {
   const voiceSpeed = parseFloat(
     document.getElementById("voice-speed")?.value || 1.0
   );
-  const baseWpm = 140;
-  const adjustedWpm = baseWpm * voiceSpeed;
+  const adjustedWpm = BASE_TTS_WPM * voiceSpeed;
   const estimatedMinutes = wordCount / adjustedWpm;
   const estimatedMs = estimatedMinutes * 60 * 1000;
 
