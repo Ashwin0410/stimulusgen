@@ -66,9 +66,39 @@ const music = {
   getTrack: (trackId) => request(`/music/track/${trackId}`),
   getByPath: (path) =>
     request(`/music/by-path?path=${encodeURIComponent(path)}`),
-  // Get duration and target words for a track
-  getDuration: (path, wpm = 140) =>
-    request(`/music/duration?path=${encodeURIComponent(path)}&wpm=${wpm}`),
+  
+  /**
+   * Get duration and target words for a track with voice adjustments.
+   * 
+   * @param {string} path - Path to the music track
+   * @param {number} voiceSpeed - Voice speed multiplier (0.5 to 2.0, default 1.0)
+   * @param {number} speechEntryMs - Delay before voice starts in ms (default 0)
+   * @param {number} crossfadeMs - Crossfade duration at end in ms (default 2000)
+   * @param {number} wpm - Words per minute override (optional)
+   * @param {number} safetyFactor - Safety buffer override (optional)
+   * @returns {Promise<Object>} Duration and target words info
+   */
+  getDuration: (
+    path,
+    voiceSpeed = 1.0,
+    speechEntryMs = 0,
+    crossfadeMs = 2000,
+    wpm = null,
+    safetyFactor = null
+  ) => {
+    let url = `/music/duration?path=${encodeURIComponent(path)}`;
+    url += `&voice_speed=${voiceSpeed}`;
+    url += `&speech_entry_ms=${speechEntryMs}`;
+    url += `&crossfade_ms=${crossfadeMs}`;
+    if (wpm !== null) {
+      url += `&wpm=${wpm}`;
+    }
+    if (safetyFactor !== null) {
+      url += `&safety_factor=${safetyFactor}`;
+    }
+    return request(url);
+  },
+  
   // Upload a new music file
   upload: (file, folder = "") => {
     const formData = new FormData();
@@ -78,7 +108,7 @@ const music = {
   },
   // Delete a music track (only uploaded tracks)
   delete: (trackId) => request(`/music/track/${trackId}`, { method: "DELETE" }),
-  // NEW: List only uploaded music tracks
+  // List only uploaded music tracks
   listUploaded: () => request("/music/uploaded"),
 };
 
@@ -92,9 +122,38 @@ const llm = {
   templates: () => request("/llm/templates"),
   getStyle: (styleId) => request(`/llm/styles/${styleId}`),
   chaplinReference: () => request("/llm/reference/chaplin"),
-  // Calculate target words from duration
-  calculateWords: (durationMs, wpm = 140) =>
-    request(`/llm/calculate-words?duration_ms=${durationMs}&wpm=${wpm}`),
+  
+  /**
+   * Calculate target words from duration with voice adjustments.
+   * 
+   * @param {number} durationMs - Duration in milliseconds
+   * @param {number} voiceSpeed - Voice speed multiplier (0.5 to 2.0, default 1.0)
+   * @param {number} speechEntryMs - Delay before voice starts in ms (default 0)
+   * @param {number} crossfadeMs - Crossfade duration at end in ms (default 2000)
+   * @param {number} wpm - Words per minute override (optional)
+   * @param {number} safetyFactor - Safety buffer override (optional)
+   * @returns {Promise<Object>} Target words and calculation details
+   */
+  calculateWords: (
+    durationMs,
+    voiceSpeed = 1.0,
+    speechEntryMs = 0,
+    crossfadeMs = 2000,
+    wpm = null,
+    safetyFactor = null
+  ) => {
+    let url = `/llm/calculate-words?duration_ms=${durationMs}`;
+    url += `&voice_speed=${voiceSpeed}`;
+    url += `&speech_entry_ms=${speechEntryMs}`;
+    url += `&crossfade_ms=${crossfadeMs}`;
+    if (wpm !== null) {
+      url += `&wpm=${wpm}`;
+    }
+    if (safetyFactor !== null) {
+      url += `&safety_factor=${safetyFactor}`;
+    }
+    return request(url);
+  },
 };
 
 // ========== STIMULI ==========
