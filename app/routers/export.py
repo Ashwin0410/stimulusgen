@@ -62,7 +62,7 @@ async def export_csv():
             "text_source": s.text.source,
             "text_llm_model": s.text.llm_model,
             "text_llm_temperature": s.text.llm_temperature,
-            "text_speech_text": s.text.speech_text[:500] if s.text.speech_text else "",
+            "text_speech_text": s.text.speech_text if s.text.speech_text else "",
             "mix_reverb_mix": s.mix.reverb_mix,
             "mix_reverb_decay": s.mix.reverb_decay,
             "mix_compression_ratio": s.mix.compression_ratio,
