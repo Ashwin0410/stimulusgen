@@ -345,20 +345,45 @@ Include [pause] markers. Build from whisper to roar.""",
 #   - Net effective rate: ~100-105 WPM
 #
 # Previous value of 140 WPM caused scripts to run 30-40% longer than music!
+#
+# SAFETY BUFFER:
+#   - We use 0.88 (12% shorter) to ensure speech ALWAYS ends before music
+#   - It's better to have music play alone for a few seconds at the end
+#     than to have voice talking after music stops
 # =============================================================================
 
 DEFAULT_TTS_WPM = 102  # Production-tested: 1.7 words per second
 
+# Safety factor: Generate fewer words to ensure speech ends before music
+# 0.88 = 12% buffer (speech will be ~12% shorter than music duration)
+DEFAULT_SAFETY_FACTOR = 0.88
 
-# Word count instruction template
+
+# Word count instruction template - STRICT VERSION
 WORD_COUNT_INSTRUCTION = """
 
-CRITICAL WORD COUNT REQUIREMENT:
-You MUST write EXACTLY {target_words} words (allow ±10 words variance).
-- Count your words carefully before finishing
-- Do not write significantly more or less than {target_words} words
-- This is essential because the text must match the duration of the background music
-- Current target: {target_words} words (approximately {duration_estimate})
+═══════════════════════════════════════════════════════════════════════════════
+CRITICAL WORD COUNT REQUIREMENT - YOU MUST FOLLOW THIS EXACTLY
+═══════════════════════════════════════════════════════════════════════════════
+
+TARGET: EXACTLY {target_words} WORDS (absolute maximum: {max_words} words)
+
+This is NON-NEGOTIABLE because:
+- The text will be converted to speech and mixed with background music
+- If you write too many words, the voice will keep talking after the music ends
+- If you write too few words, there will be awkward silence
+
+INSTRUCTIONS:
+1. Write your piece
+2. COUNT EVERY WORD (including small words like "a", "the", "is")
+3. [pause] tokens do NOT count as words
+4. If you're over {target_words} words, CUT content until you reach the target
+5. If you're under, ADD content until you reach the target
+
+TARGET: {target_words} words = approximately {duration_estimate} of speech
+
+BEFORE YOU FINISH: Count your words one more time. You MUST be between {min_words} and {max_words} words.
+═══════════════════════════════════════════════════════════════════════════════
 """
 
 
@@ -415,8 +440,14 @@ def build_prompt(
     # Add word count instruction if target_words is specified
     if target_words and target_words > 0:
         duration_estimate = _format_duration_estimate(target_words)
+        # Calculate min/max bounds (±5% tolerance, but max is hard limit)
+        min_words = int(target_words * 0.95)
+        max_words = int(target_words * 1.02)  # Only 2% over allowed
+        
         word_count_instruction = WORD_COUNT_INSTRUCTION.format(
             target_words=target_words,
+            min_words=min_words,
+            max_words=max_words,
             duration_estimate=duration_estimate
         )
         system_prompt += word_count_instruction
@@ -428,28 +459,35 @@ def build_prompt(
     
     # Also add word count reminder to user prompt if specified
     if target_words and target_words > 0:
-        user_prompt += f"\n\nRemember: Write EXACTLY {target_words} words (±10 words)."
+        max_words = int(target_words * 1.02)
+        user_prompt += f"\n\n⚠️ WORD COUNT: Write EXACTLY {target_words} words. MAXIMUM allowed: {max_words} words. Count carefully!"
     
     return system_prompt, user_prompt
 
 
-def calculate_target_words(duration_ms: int, words_per_minute: int = DEFAULT_TTS_WPM) -> int:
+def calculate_target_words(
+    duration_ms: int, 
+    words_per_minute: int = DEFAULT_TTS_WPM,
+    safety_factor: float = DEFAULT_SAFETY_FACTOR
+) -> int:
     """
     Calculate target word count from audio duration.
     
-    This is the basic calculation without voice speed adjustment.
-    For more accurate calculation with voice settings, use calculate_target_words_adjusted().
+    This applies the safety factor to ensure speech ends before music.
+    For more precise calculation with voice settings, use calculate_target_words_adjusted().
     
     Args:
         duration_ms: Duration in milliseconds
         words_per_minute: Speaking rate (default DEFAULT_TTS_WPM for emotional narration)
+        safety_factor: Multiply result by this to leave buffer (default 0.88 = 12% shorter)
     
     Returns:
         Target word count
     """
     duration_seconds = duration_ms / 1000
     duration_minutes = duration_seconds / 60
-    target_words = int(duration_minutes * words_per_minute)
+    raw_words = duration_minutes * words_per_minute
+    target_words = int(raw_words * safety_factor)
     return max(10, target_words)  # Minimum 10 words
 
 
@@ -459,7 +497,7 @@ def calculate_target_words_adjusted(
     speech_entry_ms: int = 0,
     crossfade_ms: int = 0,
     base_wpm: int = DEFAULT_TTS_WPM,
-    safety_factor: float = 0.97,
+    safety_factor: float = DEFAULT_SAFETY_FACTOR,
 ) -> int:
     """
     Calculate target word count with voice speed and timing adjustments.
@@ -476,7 +514,7 @@ def calculate_target_words_adjusted(
         speech_entry_ms: Delay before voice starts (ms), reduces available time
         crossfade_ms: Crossfade duration at end (ms), voice should finish before this
         base_wpm: Base words per minute at speed 1.0 (default 102 WPM)
-        safety_factor: Multiply result by this to leave buffer (default 0.97 = 3% shorter)
+        safety_factor: Multiply result by this to leave buffer (default 0.88 = 12% shorter)
     
     Returns:
         Target word count adjusted for all parameters
@@ -486,7 +524,7 @@ def calculate_target_words_adjusted(
         - Available time: 360000 - 3000 - 1000 = 356000ms = 5.93 min
         - Adjusted WPM: 102 * 1.0 = 102
         - Raw words: 5.93 * 102 = 605
-        - With safety: 605 * 0.97 = 587 words
+        - With safety: 605 * 0.88 = 532 words
     """
     # Clamp voice_speed to valid range
     voice_speed = max(0.5, min(2.0, voice_speed))
@@ -514,7 +552,7 @@ def calculate_target_words_adjusted(
     raw_words = effective_minutes * adjusted_wpm
     
     # Apply safety factor to ensure speech doesn't exceed music
-    # With accurate WPM (102), we only need a small buffer (3%)
+    # With 0.88 safety factor, speech will be ~12% shorter than available time
     target_words = int(raw_words * safety_factor)
     
     return max(10, target_words)  # Minimum 10 words
@@ -523,6 +561,11 @@ def calculate_target_words_adjusted(
 def get_default_tts_wpm() -> int:
     """Get the default TTS words per minute value."""
     return DEFAULT_TTS_WPM
+
+
+def get_default_safety_factor() -> float:
+    """Get the default safety factor for word count calculation."""
+    return DEFAULT_SAFETY_FACTOR
 
 
 def list_styles() -> list:
