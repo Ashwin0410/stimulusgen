@@ -1,12 +1,17 @@
 import shutil
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile, File
-from typing import List
+from typing import List, Optional
 
 from app.config import ASSETS_DIR, UPLOADS_DIR
 from app.utils.audio import get_file_duration_ms
 from app.utils.naming import sanitize_filename, generate_track_id, extract_track_name
-from app.services.prompt import calculate_target_words
+from app.services.prompt import (
+    calculate_target_words,
+    calculate_target_words_adjusted,
+    get_default_tts_wpm,
+    get_default_safety_factor,
+)
 
 router = APIRouter()
 
@@ -207,18 +212,30 @@ async def get_track_by_path(path: str):
 
 
 @router.get("/music/duration")
-async def get_track_duration(path: str, wpm: int = 140):
+async def get_track_duration(
+    path: str,
+    voice_speed: float = 1.0,
+    speech_entry_ms: int = 0,
+    crossfade_ms: int = 2000,
+    wpm: Optional[int] = None,
+    safety_factor: Optional[float] = None,
+):
     """
     Get duration and target word count for a music track.
     
-    This is a lightweight endpoint specifically for the word count calculation.
+    This endpoint calculates the optimal word count for speech that will
+    match the music duration, accounting for voice speed and timing parameters.
     
     Args:
         path: Relative path to the track within music directory
-        wpm: Words per minute for calculation (default 140)
+        voice_speed: ElevenLabs voice speed multiplier (0.5 to 2.0, default 1.0)
+        speech_entry_ms: Delay before voice starts in ms (default 0)
+        crossfade_ms: Crossfade duration at end in ms (default 2000)
+        wpm: Words per minute override (optional, uses default 102 if not specified)
+        safety_factor: Safety buffer override (optional, uses default 0.88 if not specified)
     
     Returns:
-        duration_ms, duration_formatted, target_words
+        duration_ms, duration_formatted, target_words, and calculation parameters
     """
     full_path = get_full_path_from_api_path(path)
     
@@ -231,14 +248,45 @@ async def get_track_duration(path: str, wpm: int = 140):
         if not duration_ms or duration_ms <= 0:
             raise HTTPException(status_code=500, detail="Could not determine track duration")
         
-        target_words = calculate_target_words(duration_ms, wpm)
+        # Use provided values or defaults
+        base_wpm = wpm if wpm is not None else get_default_tts_wpm()
+        used_safety_factor = safety_factor if safety_factor is not None else get_default_safety_factor()
+        
+        # Calculate target words with all adjustments
+        target_words = calculate_target_words_adjusted(
+            duration_ms=duration_ms,
+            voice_speed=voice_speed,
+            speech_entry_ms=speech_entry_ms,
+            crossfade_ms=crossfade_ms,
+            base_wpm=base_wpm,
+            safety_factor=used_safety_factor,
+        )
+        
+        # Calculate effective duration (for display purposes)
+        effective_duration_ms = duration_ms - speech_entry_ms - (crossfade_ms / 2)
+        effective_duration_ms = max(0, effective_duration_ms)
+        
+        # Estimate speech duration based on target words
+        adjusted_wpm = base_wpm * voice_speed
+        estimated_speech_ms = int((target_words / adjusted_wpm) * 60 * 1000) if adjusted_wpm > 0 else 0
         
         return {
             "path": path,
             "duration_ms": duration_ms,
             "duration_formatted": _format_duration(duration_ms),
-            "words_per_minute": wpm,
+            "effective_duration_ms": int(effective_duration_ms),
+            "effective_duration_formatted": _format_duration(int(effective_duration_ms)),
             "target_words": target_words,
+            "estimated_speech_ms": estimated_speech_ms,
+            "estimated_speech_formatted": _format_duration(estimated_speech_ms),
+            # Parameters used for calculation
+            "params": {
+                "voice_speed": voice_speed,
+                "speech_entry_ms": speech_entry_ms,
+                "crossfade_ms": crossfade_ms,
+                "words_per_minute": base_wpm,
+                "safety_factor": used_safety_factor,
+            },
         }
     except HTTPException:
         raise
