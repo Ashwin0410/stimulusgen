@@ -52,7 +52,7 @@ def _split_text_into_chunks(text: str, max_chars: int = DEFAULT_MAX_CHARS) -> Li
 def _synth_chunk(
     text: str,
     voice_id: str,
-    model: str = "eleven_multilingual_v2",
+    model: str = "eleven_v3",
     stability: float = 0.5,
     similarity_boost: float = 0.75,
     style: float = 0.0,
@@ -138,7 +138,7 @@ def _synth_chunk(
 def synthesize_speech(
     text: str,
     voice_id: str,
-    model: str = "eleven_multilingual_v2",
+    model: str = "eleven_v3",
     stability: float = 0.5,
     similarity_boost: float = 0.75,
     style: float = 0.0,
