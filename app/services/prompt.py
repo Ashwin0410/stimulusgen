@@ -22,68 +22,136 @@ Dictators free themselves but they enslave the people! Now let us fight to fulfi
 
 
 # =============================================================================
-# ELEVENLABS V3 AUDIO TAGS INSTRUCTION
+# ELEVENLABS VOICE EXPRESSION INSTRUCTION
 # =============================================================================
 # This instruction block is added to ALL system prompts to enable emotional
-# voice output when using ElevenLabs v3 model.
+# voice output when using ElevenLabs text-to-speech.
 #
-# Audio tags are inline markers that control emotion, delivery, and human reactions.
-# They are wrapped in square brackets and placed directly in the text.
+# TWO METHODS FOR EXPRESSIVENESS:
 #
-# Categories:
-#   - Emotions: [excited], [sad], [angry], [happy], [fearful], [surprised], [tender]
-#   - Delivery: [whispers], [shouts], [softly], [urgently], [slowly], [quickly]
-#   - Human reactions: [sighs], [laughs], [chuckles], [gasps], [clears throat], [sniffles]
-#   - Pacing: [pause], [long pause], [beat]
+# 1. PUNCTUATION (works with ALL voices and models - most reliable):
+#    - ? = questioning, rising intonation
+#    - ! = excitement, urgency, emphasis
+#    - ... = hesitation, suspense, trailing off
+#    - , and . = natural pauses, pacing
+#    - — (em dash) = dramatic pause, interruption
+#
+# 2. AUDIO TAGS (works with v3 model - bonus expressiveness):
+#    - Emotions: [excited], [sad], [angry], [happy], [fearful], [tender]
+#    - Delivery: [whispers], [shouts], [softly], [urgently], [slowly]
+#    - Human reactions: [sighs], [laughs], [gasps], [takes a deep breath]
+#    - Pacing: [pause], [long pause], [beat]
 # =============================================================================
 
 AUDIO_TAGS_INSTRUCTION = """
 
 ═══════════════════════════════════════════════════════════════════════════════
-EMOTIONAL AUDIO TAGS (CRITICAL FOR VOICE SYNTHESIS)
+VOICE EXPRESSION GUIDE (CRITICAL FOR EMOTIONAL SPEECH SYNTHESIS)
 ═══════════════════════════════════════════════════════════════════════════════
 
-The text you write will be converted to speech using ElevenLabs v3 text-to-speech.
-To make the voice sound EMOTIONAL and HUMAN (not robotic), you MUST include audio tags.
+The text you write will be converted to speech using ElevenLabs text-to-speech.
+To make the voice sound EMOTIONAL and HUMAN (not robotic), use BOTH methods below:
 
-Audio tags are words in [square brackets] that control how the voice sounds.
-Place them INLINE with your text, right before the words they should affect.
+───────────────────────────────────────────────────────────────────────────────
+METHOD 1: PUNCTUATION (Works with ALL voices - MOST RELIABLE)
+───────────────────────────────────────────────────────────────────────────────
 
-AVAILABLE AUDIO TAGS:
+ElevenLabs is trained to understand punctuation as emotional cues:
 
-EMOTIONS (use these to set emotional tone):
+  ?   → Questioning tone, rising intonation at end
+        "Have you ever felt truly alive?"
+        "What if everything changed... right now?"
+
+  !   → Excitement, urgency, emphasis, increased energy
+        "This is your moment!"
+        "You are not alone!"
+        "Fight for what you believe in!"
+
+  ... → Hesitation, suspense, trailing off, emotional weight
+        "And then... everything changed."
+        "I never thought... I'd find my way back."
+        "Sometimes... we just need to breathe."
+
+  ,   → Natural micro-pauses, pacing, breath points
+        "In this moment, right here, you are enough."
+
+  .   → Full stop, finality, letting a thought land
+        "This is it. This is your life. Live it."
+
+  —   → Dramatic pause, interruption, emphasis (em dash)
+        "You are—and always have been—worthy of love."
+        "The truth is—we need each other."
+
+PUNCTUATION EXAMPLES:
+  ❌ Flat: "You are capable of amazing things and you should believe in yourself"
+  ✅ Alive: "You are capable of amazing things! Do you believe that? You should... because it's true."
+
+  ❌ Flat: "Take a breath and notice how you feel right now"
+  ✅ Alive: "Take a breath... Notice how you feel. Right now. In this moment."
+
+───────────────────────────────────────────────────────────────────────────────
+METHOD 2: AUDIO TAGS (Bonus expressiveness for v3 model)
+───────────────────────────────────────────────────────────────────────────────
+
+Audio tags are words in [square brackets] that directly control voice emotion.
+Place them INLINE, right before the words they should affect.
+
+EMOTIONS (set emotional tone):
   [excited] [sad] [angry] [happy] [fearful] [surprised] [tender] [hopeful]
   [melancholic] [anxious] [peaceful] [passionate] [sorrowful] [joyful]
 
-DELIVERY (use these to control how words are spoken):
+DELIVERY (control how words are spoken):
   [whispers] [shouts] [softly] [loudly] [urgently] [slowly] [quickly]
   [gently] [firmly] [hesitantly] [confidently] [dramatically]
 
-HUMAN REACTIONS (use these for natural, human moments):
+HUMAN REACTIONS (natural, authentic moments):
   [sighs] [laughs] [chuckles] [gasps] [clears throat] [sniffles]
   [takes a deep breath] [exhales] [pauses to think]
 
-PACING (use these to control rhythm):
+PACING (control rhythm):
   [pause] [long pause] [beat] [silence]
 
-EXAMPLE OF GOOD USAGE:
-  "[softly] Welcome to this moment of stillness. [pause] [takes a deep breath]
-   As you settle in, [gently] let the weight of the day begin to lift.
-   [pause] [tender] You've carried so much. [sighs] And yet here you are.
-   [building excitement] Feel the possibility rising within you!
-   [whispers] This is where transformation begins. [long pause]
-   [passionately] You are capable of more than you know!"
+───────────────────────────────────────────────────────────────────────────────
+COMBINED EXAMPLE (Best Results - Use BOTH Methods Together)
+───────────────────────────────────────────────────────────────────────────────
 
-RULES:
-1. Use audio tags FREQUENTLY throughout the text (at least every 2-3 sentences)
-2. VARY the emotions - don't use the same tag repeatedly
-3. Match tags to content (sad content = [sad], exciting content = [excited])
-4. Use [pause] at emotional peaks and transitions
-5. Use [whispers] for intimate/profound moments
-6. Use [sighs], [laughs], [takes a deep breath] for human authenticity
-7. Build emotional arc: start softer, build intensity, then resolve
+[softly] Welcome to this moment of stillness... [pause]
+
+[takes a deep breath] As you settle in, let the weight of the day begin to lift.
+Just for now... you don't have to carry anything.
+
+[tender] You've been through so much, haven't you? [sighs] And yet—here you are.
+Still standing. Still hoping. Still trying.
+
+[pause] Do you realize how remarkable that is?
+
+[building excitement] There is something incredible waiting inside you!
+Something that has survived every storm... every doubt... every fear!
+
+[whispers] Can you feel it? [long pause]
+
+[passionately] You are not broken! You are not too late! You are exactly where 
+you need to be!
+
+[gently] So take another breath... [exhales] And know this:
+
+[tender] You are worthy of love. You always have been. [pause] You always will be.
+
+───────────────────────────────────────────────────────────────────────────────
+RULES FOR MAXIMUM EXPRESSION
+───────────────────────────────────────────────────────────────────────────────
+
+1. USE PUNCTUATION STRATEGICALLY throughout (?, !, ..., —)
+2. ADD AUDIO TAGS every 2-3 sentences for emotional shifts
+3. VARY your techniques - don't repeat the same pattern
+4. USE ELLIPSES (...) for emotional weight and suspense
+5. USE QUESTIONS (?) to create intimacy and engagement
+6. USE EXCLAMATIONS (!) at emotional peaks
+7. COMBINE methods: "[whispers] Do you feel that...?" 
+8. BUILD an emotional arc: soft → building → peak → resolution
 
 Audio tags in [square brackets] do NOT count toward your word count.
+Use them generously!
 ═══════════════════════════════════════════════════════════════════════════════
 """
 
@@ -325,7 +393,8 @@ Make it:
 - Personal (start with "I" or a specific moment)
 - Universal (connect to shared human experience)  
 - Building (emotional crescendo toward the end)
-- Include audio tags like [pause], [whispers], [softly], [excited], [sighs] at key emotional moments
+- Use punctuation for emotion: ? for questions, ! for intensity, ... for weight
+- Include audio tags like [pause], [whispers], [softly], [excited], [sighs] at key moments
 
 The listener should feel chills by the final lines.""",
     
@@ -337,6 +406,7 @@ Structure it as:
 3. Emotional peak (the moment of impact)
 4. Resolution (leave them changed)
 
+Use punctuation for expression: ? ! ... — for drama and emotion.
 Include audio tags like [pause], [whispers], [softly], [excited], [sighs] throughout. Make it visceral, not intellectual.""",
     
     "journey": """Write a spoken meditation that takes the listener on an emotional journey through {topic}.
@@ -347,7 +417,8 @@ Arc:
 3. The revelation moment (peak)
 4. Integrate and return (resolution)
 
-More pauses than words. Use audio tags like [pause], [whispers], [softly], [takes a deep breath], [sighs] to mark the space for feeling.""",
+More pauses than words. Use ... for contemplative moments.
+Use audio tags like [pause], [whispers], [softly], [takes a deep breath], [sighs] to mark the space for feeling.""",
     
     "reflection": """Write a contemplative reflection on {topic} that makes the listener feel deeply connected to their own humanity.
 
@@ -357,6 +428,7 @@ Approach:
 - Find the universal in the specific
 - End with quiet resonance, not a bang
 
+Use ... for weight, ? for gentle questions that linger.
 Include audio tags like [pause], [softly], [gently], [whispers], [sighs] throughout. Write as if sitting beside them, not on a stage.""",
     
     "letter": """Write as if speaking directly to one person about {topic}. 
@@ -367,6 +439,7 @@ This is intimate - you're looking them in the eyes.
 - Include what you notice about them
 - End with what you hope for them
 
+Use ? to ask real questions. Use ... for the unsaid.
 Include audio tags like [pause], [tenderly], [softly], [whispers], [sighs] throughout. This should feel like a gift, not a performance.""",
 
     "eulogy": """Write a piece about {topic} as if it were a eulogy - not for a person, but for a feeling, a time, a way of being.
@@ -378,6 +451,7 @@ Structure:
 4. What it taught us
 5. How we carry it forward
 
+Use ... for grief, ? for wondering, ! for celebrating.
 Include audio tags like [pause], [softly], [sighs], [sad], [warmly], [hopeful] throughout. Grief and gratitude intertwined.""",
 
     "manifesto": """Write a passionate manifesto about {topic} in the style of the Great Dictator speech.
@@ -390,6 +464,7 @@ Structure:
 5. Building intensity: "We must..." / "We can..."
 6. Rallying cry: "Let us..."
 
+Use ! for rallying cries, ... for dramatic pauses, — for emphasis.
 Include audio tags like [softly], [pause], [firmly], [passionately], [shouts], [urgently] throughout. Build from whisper to roar.""",
 }
 
@@ -439,7 +514,7 @@ This is NON-NEGOTIABLE because:
 - If you write too few words, there will be awkward silence
 
 INSTRUCTIONS:
-1. Write your piece with emotional audio tags like [excited], [whispers], [pause], [sighs]
+1. Write your piece with emotional punctuation (?, !, ...) and audio tags ([excited], [whispers], [pause], [sighs])
 2. COUNT EVERY WORD (including small words like "a", "the", "is")
 3. Audio tags in [square brackets] do NOT count as words (e.g., [pause], [whispers], [excited], [sighs])
 4. If you're over {target_words} words, CUT content until you reach the target
@@ -530,7 +605,7 @@ def build_prompt(
     if target_words and target_words > 0:
         max_words = int(target_words * 1.02)
         user_prompt += f"\n\n⚠️ WORD COUNT: Write EXACTLY {target_words} words. MAXIMUM allowed: {max_words} words. Count carefully!"
-        user_prompt += f"\n💡 AUDIO TAGS: Use [excited], [whispers], [pause], [sighs], [softly], etc. freely - they don't count as words!"
+        user_prompt += f"\n💡 EXPRESSION: Use punctuation (?, !, ...) AND audio tags ([excited], [whispers], [pause], [sighs]) freely - tags don't count as words!"
     
     return system_prompt, user_prompt
 
