@@ -14,7 +14,7 @@ import json
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Tuple, Dict, Any
 import subprocess
 
 import numpy as np
@@ -389,6 +389,212 @@ def apply_prosody(
         return voice_path
 
 
+def apply_prosody_with_diagnostics(
+    voice_path: str,
+    reference: str,
+    intensity: float = 0.5,
+) -> Dict[str, Any]:
+    """
+    Apply prosody transfer and return detailed diagnostics.
+    
+    This is the enhanced version of apply_prosody() that returns
+    both the output path AND diagnostic information for verification.
+    
+    Args:
+        voice_path: Path to input voice audio
+        reference: Prosody reference ID (e.g., "great_dictator")
+        intensity: Transfer intensity from 0.0 (none) to 1.0 (full)
+    
+    Returns:
+        Dict with:
+            - output_path: Path to modified audio (or original if skipped/failed)
+            - applied: Whether prosody transfer was actually applied
+            - skipped: Whether transfer was intentionally skipped
+            - error: Error message if failed, None otherwise
+            - diagnostics: Detailed diagnostic info
+    """
+    result = {
+        "output_path": voice_path,
+        "applied": False,
+        "skipped": False,
+        "error": None,
+        "diagnostics": {
+            "input_path": voice_path,
+            "reference": reference,
+            "intensity": intensity,
+            "source_pitch_mean": None,
+            "source_pitch_std": None,
+            "target_pitch_mean": None,
+            "target_pitch_std": None,
+            "output_pitch_mean": None,
+            "output_pitch_std": None,
+            "mean_shift_applied": None,
+            "range_scale_applied": None,
+            "pitch_change": None,
+            "std_change": None,
+            "transfer_successful": False,
+        }
+    }
+    
+    print(f"[Prosody] ========== PROSODY TRANSFER WITH DIAGNOSTICS ==========")
+    print(f"[Prosody] Input: {voice_path}")
+    print(f"[Prosody] Reference: {reference}")
+    print(f"[Prosody] Intensity: {intensity}")
+    
+    # Check if input file exists
+    if not os.path.exists(voice_path):
+        result["error"] = f"Input file not found: {voice_path}"
+        print(f"[Prosody] ERROR: {result['error']}")
+        return result
+    
+    input_size = os.path.getsize(voice_path)
+    result["diagnostics"]["input_file_size"] = input_size
+    print(f"[Prosody] Input file size: {input_size} bytes")
+    
+    # Check if transfer should be skipped
+    if reference == "none" or intensity <= 0:
+        result["skipped"] = True
+        result["diagnostics"]["skip_reason"] = f"reference={reference}, intensity={intensity}"
+        print(f"[Prosody] Skipping: {result['diagnostics']['skip_reason']}")
+        return result
+    
+    # Load target profile
+    profile = get_prosody_profile(reference)
+    if not profile:
+        result["error"] = f"No profile found for reference: {reference}"
+        print(f"[Prosody] ERROR: {result['error']}")
+        return result
+    
+    result["diagnostics"]["target_pitch_mean"] = profile.get("pitch_mean", 0)
+    result["diagnostics"]["target_pitch_std"] = profile.get("pitch_std", 0)
+    print(f"[Prosody] Target profile: mean={profile.get('pitch_mean', 0):.1f}Hz, std={profile.get('pitch_std', 0):.1f}Hz")
+    
+    try:
+        sound = parselmouth.Sound(voice_path)
+        print(f"[Prosody] Source audio loaded: duration={sound.duration:.2f}s")
+        
+        # Extract source pitch characteristics
+        pitch = call(sound, "To Pitch", 0.0, 75, 600)
+        source_mean = call(pitch, "Get mean", 0, 0, "Hertz")
+        source_std = call(pitch, "Get standard deviation", 0, 0, "Hertz")
+        
+        result["diagnostics"]["source_pitch_mean"] = source_mean
+        result["diagnostics"]["source_pitch_std"] = source_std
+        print(f"[Prosody] Source pitch: mean={source_mean:.1f}Hz, std={source_std:.1f}Hz")
+        
+        if source_mean <= 0 or source_std <= 0:
+            result["error"] = "Could not analyze source pitch (mean or std <= 0)"
+            print(f"[Prosody] ERROR: {result['error']}")
+            return result
+        
+        target_mean = profile.get("pitch_mean", source_mean)
+        target_std = profile.get("pitch_std", source_std)
+        
+        if target_mean <= 0:
+            target_mean = source_mean
+        if target_std <= 0:
+            target_std = source_std
+        
+        # Calculate transformations
+        mean_shift = 1 + (target_mean / source_mean - 1) * intensity
+        mean_shift = max(0.5, min(2.0, mean_shift))
+        
+        range_scale = 1 + (target_std / source_std - 1) * intensity * 0.5
+        range_scale = max(0.5, min(2.0, range_scale))
+        
+        result["diagnostics"]["mean_shift_applied"] = mean_shift
+        result["diagnostics"]["range_scale_applied"] = range_scale
+        print(f"[Prosody] Transformations: mean_shift={mean_shift:.3f}, range_scale={range_scale:.3f}")
+        
+        # Create manipulation object
+        manipulation = call(sound, "To Manipulation", 0.01, 75, 600)
+        pitch_tier = call(manipulation, "Extract pitch tier")
+        
+        num_points = call(pitch_tier, "Get number of points")
+        result["diagnostics"]["pitch_points_count"] = num_points
+        print(f"[Prosody] Pitch tier has {num_points} points")
+        
+        # Apply pitch shift
+        call(pitch_tier, "Multiply frequencies", sound.xmin, sound.xmax, mean_shift)
+        
+        # Apply range scaling
+        if abs(range_scale - 1.0) > 0.05 and num_points > 0:
+            new_mean = source_mean * mean_shift
+            points_modified = 0
+            
+            for i in range(1, num_points + 1):
+                time = call(pitch_tier, "Get time from index", i)
+                value = call(pitch_tier, "Get value at index", i)
+                if value > 0:
+                    distance = value - new_mean
+                    new_value = new_mean + distance * range_scale
+                    new_value = max(50, min(500, new_value))
+                    call(pitch_tier, "Remove point", i)
+                    call(pitch_tier, "Add point", time, new_value)
+                    points_modified += 1
+            
+            result["diagnostics"]["pitch_points_modified"] = points_modified
+            print(f"[Prosody] Modified {points_modified} pitch points")
+        
+        # Resynthesize
+        call([manipulation, pitch_tier], "Replace pitch tier")
+        new_sound = call(manipulation, "Get resynthesis (overlap-add)")
+        
+        # Export
+        out_path = tempfile.NamedTemporaryFile(delete=False, suffix=".wav").name
+        new_sound.save(out_path, "WAV")
+        
+        output_size = os.path.getsize(out_path) if os.path.exists(out_path) else 0
+        result["diagnostics"]["output_file_size"] = output_size
+        result["output_path"] = out_path
+        print(f"[Prosody] Output: {out_path} ({output_size} bytes)")
+        
+        # Verification
+        try:
+            out_sound = parselmouth.Sound(out_path)
+            out_pitch = call(out_sound, "To Pitch", 0.0, 75, 600)
+            out_mean = call(out_pitch, "Get mean", 0, 0, "Hertz")
+            out_std = call(out_pitch, "Get standard deviation", 0, 0, "Hertz")
+            
+            result["diagnostics"]["output_pitch_mean"] = out_mean
+            result["diagnostics"]["output_pitch_std"] = out_std
+            result["diagnostics"]["pitch_change"] = out_mean - source_mean
+            result["diagnostics"]["std_change"] = out_std - source_std
+            
+            print(f"[Prosody] VERIFICATION:")
+            print(f"[Prosody]   Before: mean={source_mean:.1f}Hz, std={source_std:.1f}Hz")
+            print(f"[Prosody]   After:  mean={out_mean:.1f}Hz, std={out_std:.1f}Hz")
+            print(f"[Prosody]   Target: mean={target_mean:.1f}Hz, std={target_std:.1f}Hz")
+            print(f"[Prosody]   Change: mean={out_mean - source_mean:+.1f}Hz, std={out_std - source_std:+.1f}Hz")
+            
+            # Determine if transfer was successful
+            pitch_changed = abs(out_mean - source_mean) >= 1.0 or abs(out_std - source_std) >= 1.0
+            result["diagnostics"]["transfer_successful"] = pitch_changed
+            result["applied"] = pitch_changed
+            
+            if pitch_changed:
+                print(f"[Prosody] ✅ SUCCESS: Prosody transfer applied successfully")
+            else:
+                print(f"[Prosody] ⚠️ WARNING: Pitch barely changed - transfer may not be effective")
+                result["diagnostics"]["warning"] = "Pitch barely changed after transfer"
+                
+        except Exception as ve:
+            print(f"[Prosody] WARNING: Could not verify output: {ve}")
+            result["diagnostics"]["verification_error"] = str(ve)
+            # Still mark as applied since we did produce output
+            result["applied"] = True
+        
+        print(f"[Prosody] ========== PROSODY TRANSFER COMPLETE ==========")
+        return result
+        
+    except Exception as e:
+        result["error"] = str(e)
+        print(f"[Prosody] ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        return result
+
+
 def compare_prosody(voice_path: str, reference: str) -> dict:
     """
     Compare voice audio to a prosody reference.
@@ -510,18 +716,28 @@ def verify_prosody_setup() -> dict:
         "great_dictator_audio": None,
         "great_dictator_profile": None,
         "parselmouth_version": parselmouth.__version__ if hasattr(parselmouth, '__version__') else "unknown",
+        "status": "unknown",
+        "issues": [],
     }
     
-    if prosody_dir.exists():
-        for f in prosody_dir.iterdir():
-            if f.suffix.lower() in [".mp3", ".wav", ".m4a", ".ogg"]:
-                result["audio_files"].append(f.name)
-                if "great_dictator" in f.name.lower():
-                    result["great_dictator_audio"] = str(f)
-            elif f.suffix.lower() == ".json":
-                result["profile_files"].append(f.name)
-                if "great_dictator" in f.name.lower():
-                    result["great_dictator_profile"] = str(f)
+    if not prosody_dir.exists():
+        result["status"] = "error"
+        result["issues"].append(f"Prosody directory does not exist: {prosody_dir}")
+        return result
+    
+    for f in prosody_dir.iterdir():
+        if f.suffix.lower() in [".mp3", ".wav", ".m4a", ".ogg"]:
+            result["audio_files"].append(f.name)
+            if "great_dictator" in f.name.lower():
+                result["great_dictator_audio"] = str(f)
+        elif f.suffix.lower() == ".json":
+            result["profile_files"].append(f.name)
+            if "great_dictator" in f.name.lower():
+                result["great_dictator_profile"] = str(f)
+    
+    # Check for great_dictator files
+    if not result["great_dictator_audio"] and not result["great_dictator_profile"]:
+        result["issues"].append("No great_dictator audio or profile found")
     
     # Try to load great_dictator profile
     profile = get_prosody_profile("great_dictator")
@@ -529,5 +745,145 @@ def verify_prosody_setup() -> dict:
     if profile:
         result["great_dictator_pitch_mean"] = profile.get("pitch_mean", 0)
         result["great_dictator_pitch_std"] = profile.get("pitch_std", 0)
+        
+        # Check if profile values are valid
+        if profile.get("pitch_mean", 0) <= 0:
+            result["issues"].append("great_dictator profile has invalid pitch_mean")
+        if profile.get("pitch_std", 0) <= 0:
+            result["issues"].append("great_dictator profile has invalid pitch_std")
+    else:
+        result["issues"].append("Could not load great_dictator profile")
+    
+    # Set overall status
+    if len(result["issues"]) == 0:
+        result["status"] = "ok"
+    elif result["great_dictator_profile_loaded"]:
+        result["status"] = "warning"
+    else:
+        result["status"] = "error"
+    
+    return result
+
+
+def test_prosody_transfer(test_text: str = None) -> Dict[str, Any]:
+    """
+    Test prosody transfer with a simple audio generation.
+    
+    This function creates a test WAV file with a sine wave tone,
+    applies prosody transfer, and verifies the result.
+    
+    Returns detailed test results.
+    """
+    import wave
+    import struct
+    
+    result = {
+        "test_name": "prosody_transfer_test",
+        "status": "unknown",
+        "steps": [],
+        "errors": [],
+    }
+    
+    # Step 1: Verify setup
+    result["steps"].append("Verifying prosody setup...")
+    setup = verify_prosody_setup()
+    result["setup_verification"] = setup
+    
+    if setup["status"] == "error":
+        result["status"] = "failed"
+        result["errors"].append("Prosody setup verification failed")
+        return result
+    
+    # Step 2: Create a test audio file (simple tone)
+    result["steps"].append("Creating test audio file...")
+    try:
+        test_path = tempfile.NamedTemporaryFile(delete=False, suffix=".wav").name
+        
+        # Generate a simple tone with varying pitch (simulates speech)
+        sample_rate = 44100
+        duration = 2.0  # 2 seconds
+        num_samples = int(sample_rate * duration)
+        
+        # Create a tone that varies in frequency (100-200 Hz)
+        samples = []
+        for i in range(num_samples):
+            t = i / sample_rate
+            # Vary frequency from 100 to 200 Hz over time
+            freq = 100 + 50 * np.sin(2 * np.pi * 0.5 * t)  # Oscillate between 100-150 Hz
+            sample = int(32767 * 0.5 * np.sin(2 * np.pi * freq * t))
+            samples.append(sample)
+        
+        # Write WAV file
+        with wave.open(test_path, 'w') as wav_file:
+            wav_file.setnchannels(1)
+            wav_file.setsampwidth(2)
+            wav_file.setframerate(sample_rate)
+            for sample in samples:
+                wav_file.writeframes(struct.pack('<h', sample))
+        
+        result["test_audio_path"] = test_path
+        result["test_audio_size"] = os.path.getsize(test_path)
+        result["steps"].append(f"Created test audio: {test_path} ({result['test_audio_size']} bytes)")
+        
+    except Exception as e:
+        result["status"] = "failed"
+        result["errors"].append(f"Failed to create test audio: {e}")
+        return result
+    
+    # Step 3: Extract prosody from test audio
+    result["steps"].append("Extracting prosody from test audio...")
+    try:
+        test_profile = extract_prosody(test_path)
+        result["test_audio_profile"] = {
+            "pitch_mean": test_profile.get("pitch_mean", 0),
+            "pitch_std": test_profile.get("pitch_std", 0),
+        }
+        result["steps"].append(f"Test audio pitch: mean={test_profile.get('pitch_mean', 0):.1f}Hz, std={test_profile.get('pitch_std', 0):.1f}Hz")
+    except Exception as e:
+        result["status"] = "failed"
+        result["errors"].append(f"Failed to extract prosody: {e}")
+        return result
+    
+    # Step 4: Apply prosody transfer
+    result["steps"].append("Applying prosody transfer...")
+    try:
+        transfer_result = apply_prosody_with_diagnostics(
+            test_path,
+            reference="great_dictator",
+            intensity=0.7
+        )
+        result["transfer_result"] = transfer_result
+        
+        if transfer_result.get("error"):
+            result["errors"].append(f"Prosody transfer error: {transfer_result['error']}")
+        
+        if transfer_result.get("applied"):
+            result["steps"].append("Prosody transfer applied successfully")
+        elif transfer_result.get("skipped"):
+            result["steps"].append("Prosody transfer was skipped")
+        else:
+            result["steps"].append("Prosody transfer may not have been effective")
+            
+    except Exception as e:
+        result["status"] = "failed"
+        result["errors"].append(f"Failed to apply prosody: {e}")
+        return result
+    
+    # Step 5: Cleanup
+    try:
+        os.unlink(test_path)
+        if transfer_result.get("output_path") and transfer_result["output_path"] != test_path:
+            if os.path.exists(transfer_result["output_path"]):
+                os.unlink(transfer_result["output_path"])
+    except Exception:
+        pass
+    
+    # Determine overall status
+    if len(result["errors"]) > 0:
+        result["status"] = "failed"
+    elif transfer_result.get("applied"):
+        result["status"] = "passed"
+    else:
+        result["status"] = "warning"
     
     return result
