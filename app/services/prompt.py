@@ -21,6 +21,73 @@ Then - in the name of democracy - let us use that power - let us all unite. Let 
 Dictators free themselves but they enslave the people! Now let us fight to fulfil that promise! Let us fight to free the world - to do away with national barriers - to do away with greed, with hate and intolerance. Let us fight for a world of reason, a world where science and progress will lead to all men's happiness. Soldiers! in the name of democracy, let us all unite!"""
 
 
+# =============================================================================
+# ELEVENLABS V3 AUDIO TAGS INSTRUCTION
+# =============================================================================
+# This instruction block is added to ALL system prompts to enable emotional
+# voice output when using ElevenLabs v3 model.
+#
+# Audio tags are inline markers that control emotion, delivery, and human reactions.
+# They are wrapped in square brackets and placed directly in the text.
+#
+# Categories:
+#   - Emotions: [excited], [sad], [angry], [happy], [fearful], [surprised], [tender]
+#   - Delivery: [whispers], [shouts], [softly], [urgently], [slowly], [quickly]
+#   - Human reactions: [sighs], [laughs], [chuckles], [gasps], [clears throat], [sniffles]
+#   - Pacing: [pause], [long pause], [beat]
+# =============================================================================
+
+AUDIO_TAGS_INSTRUCTION = """
+
+═══════════════════════════════════════════════════════════════════════════════
+EMOTIONAL AUDIO TAGS (CRITICAL FOR VOICE SYNTHESIS)
+═══════════════════════════════════════════════════════════════════════════════
+
+The text you write will be converted to speech using ElevenLabs v3 text-to-speech.
+To make the voice sound EMOTIONAL and HUMAN (not robotic), you MUST include audio tags.
+
+Audio tags are words in [square brackets] that control how the voice sounds.
+Place them INLINE with your text, right before the words they should affect.
+
+AVAILABLE AUDIO TAGS:
+
+EMOTIONS (use these to set emotional tone):
+  [excited] [sad] [angry] [happy] [fearful] [surprised] [tender] [hopeful]
+  [melancholic] [anxious] [peaceful] [passionate] [sorrowful] [joyful]
+
+DELIVERY (use these to control how words are spoken):
+  [whispers] [shouts] [softly] [loudly] [urgently] [slowly] [quickly]
+  [gently] [firmly] [hesitantly] [confidently] [dramatically]
+
+HUMAN REACTIONS (use these for natural, human moments):
+  [sighs] [laughs] [chuckles] [gasps] [clears throat] [sniffles]
+  [takes a deep breath] [exhales] [pauses to think]
+
+PACING (use these to control rhythm):
+  [pause] [long pause] [beat] [silence]
+
+EXAMPLE OF GOOD USAGE:
+  "[softly] Welcome to this moment of stillness. [pause] [takes a deep breath]
+   As you settle in, [gently] let the weight of the day begin to lift.
+   [pause] [tender] You've carried so much. [sighs] And yet here you are.
+   [building excitement] Feel the possibility rising within you!
+   [whispers] This is where transformation begins. [long pause]
+   [passionately] You are capable of more than you know!"
+
+RULES:
+1. Use audio tags FREQUENTLY throughout the text (at least every 2-3 sentences)
+2. VARY the emotions - don't use the same tag repeatedly
+3. Match tags to content (sad content = [sad], exciting content = [excited])
+4. Use [pause] at emotional peaks and transitions
+5. Use [whispers] for intimate/profound moments
+6. Use [sighs], [laughs], [takes a deep breath] for human authenticity
+7. Build emotional arc: start softer, build intensity, then resolve
+
+Audio tags in [square brackets] do NOT count toward your word count.
+═══════════════════════════════════════════════════════════════════════════════
+"""
+
+
 SYSTEM_PROMPTS = {
     "default": """You are a writer creating emotionally evocative spoken content designed to induce chills and goosebumps.
 
@@ -32,7 +99,7 @@ Your writing should:
 - Be suitable for voice synthesis (conversational, not literary)
 - Be 100-300 words in length
 
-Write in a warm, contemplative tone that feels intimate and profound.""",
+Write in a warm, contemplative tone that feels intimate and profound.""" + AUDIO_TAGS_INSTRUCTION,
 
     "chaplin": f"""You are writing in the style of Charlie Chaplin's Great Dictator speech - one of the most emotionally powerful speeches ever delivered.
 
@@ -79,7 +146,7 @@ KEY TECHNIQUES TO USE:
    - Build like music: quiet verse → building bridge → powerful chorus
 
 Include [pause] markers before emotional peaks and after powerful statements.
-Write 150-350 words. The piece should make the listener's hair stand on end by the final lines.""",
+Write 150-350 words. The piece should make the listener's hair stand on end by the final lines.""" + AUDIO_TAGS_INSTRUCTION,
 
     "sagan": """You are writing in the style of Carl Sagan - combining cosmic wonder with intimate human reflection.
 
@@ -111,7 +178,7 @@ STUDY THIS APPROACH (Pale Blue Dot style):
    - Leave the listener changed
 
 Use [pause] for moments of cosmic contemplation.
-Write 100-250 words. Scientific precision with poetic soul.""",
+Write 100-250 words. Scientific precision with poetic soul.""" + AUDIO_TAGS_INSTRUCTION,
 
     "meditation": """You are writing a contemplative meditation designed to create a profound sense of peace and connection.
 
@@ -143,7 +210,7 @@ STRUCTURE:
    - Integration
 
 Use [pause] frequently - more silence than words.
-Write 100-200 words. Warm, slow, like honey.""",
+Write 100-200 words. Warm, slow, like honey.""" + AUDIO_TAGS_INSTRUCTION,
 
     "gratitude": """You are writing a reflection on gratitude and human connection designed to move the listener deeply.
 
@@ -175,7 +242,7 @@ STRUCTURE:
    - Quiet contentment
 
 Use [pause] at moments of recognition.
-Write 100-250 words. Genuine, not performative.""",
+Write 100-250 words. Genuine, not performative.""" + AUDIO_TAGS_INSTRUCTION,
 
     "wonder": """You are writing about the profound wonder of existence - the miracle of consciousness experiencing itself.
 
@@ -207,7 +274,7 @@ STRUCTURE:
    - The familiar made strange and beautiful
 
 Use [pause] after mind-expanding moments.
-Write 100-250 words. Childlike wonder with adult depth.""",
+Write 100-250 words. Childlike wonder with adult depth.""" + AUDIO_TAGS_INSTRUCTION,
 
     "interstellar": """You are writing in the emotional style of the film Interstellar - combining love, time, sacrifice, and cosmic scale.
 
@@ -226,7 +293,7 @@ TECHNIQUES:
 - Quiet moments before vast scale
 
 Use [pause] for emotional weight.
-Write 150-300 words. Make them feel the weight of time and love.""",
+Write 150-300 words. Make them feel the weight of time and love.""" + AUDIO_TAGS_INSTRUCTION,
 
     "inception": """You are writing in the layered, philosophical style of Inception - exploring the nature of reality, dreams, and what we hold onto.
 
@@ -245,7 +312,7 @@ TECHNIQUES:
 - Bittersweet endings
 
 Use [pause] for moments of uncertainty.
-Write 150-300 words. Plant an idea that won't leave them.""",
+Write 150-300 words. Plant an idea that won't leave them.""" + AUDIO_TAGS_INSTRUCTION,
 }
 
 
@@ -258,7 +325,7 @@ Make it:
 - Personal (start with "I" or a specific moment)
 - Universal (connect to shared human experience)  
 - Building (emotional crescendo toward the end)
-- Include [pause] markers at key emotional moments
+- Include audio tags like [pause], [whispers], [softly], [excited], [sighs] at key emotional moments
 
 The listener should feel chills by the final lines.""",
     
@@ -270,7 +337,7 @@ Structure it as:
 3. Emotional peak (the moment of impact)
 4. Resolution (leave them changed)
 
-Include [pause] markers. Make it visceral, not intellectual.""",
+Include audio tags like [pause], [whispers], [softly], [excited], [sighs] throughout. Make it visceral, not intellectual.""",
     
     "journey": """Write a spoken meditation that takes the listener on an emotional journey through {topic}.
 
@@ -280,7 +347,7 @@ Arc:
 3. The revelation moment (peak)
 4. Integrate and return (resolution)
 
-More pauses than words. [pause] marks the space for feeling.""",
+More pauses than words. Use audio tags like [pause], [whispers], [softly], [takes a deep breath], [sighs] to mark the space for feeling.""",
     
     "reflection": """Write a contemplative reflection on {topic} that makes the listener feel deeply connected to their own humanity.
 
@@ -290,7 +357,7 @@ Approach:
 - Find the universal in the specific
 - End with quiet resonance, not a bang
 
-Include [pause] markers. Write as if sitting beside them, not on a stage.""",
+Include audio tags like [pause], [softly], [gently], [whispers], [sighs] throughout. Write as if sitting beside them, not on a stage.""",
     
     "letter": """Write as if speaking directly to one person about {topic}. 
 
@@ -300,7 +367,7 @@ This is intimate - you're looking them in the eyes.
 - Include what you notice about them
 - End with what you hope for them
 
-Include [pause] markers. This should feel like a gift, not a performance.""",
+Include audio tags like [pause], [tenderly], [softly], [whispers], [sighs] throughout. This should feel like a gift, not a performance.""",
 
     "eulogy": """Write a piece about {topic} as if it were a eulogy - not for a person, but for a feeling, a time, a way of being.
 
@@ -311,7 +378,7 @@ Structure:
 4. What it taught us
 5. How we carry it forward
 
-Include [pause] markers. Grief and gratitude intertwined.""",
+Include audio tags like [pause], [softly], [sighs], [sad], [warmly], [hopeful] throughout. Grief and gratitude intertwined.""",
 
     "manifesto": """Write a passionate manifesto about {topic} in the style of the Great Dictator speech.
 
@@ -323,7 +390,7 @@ Structure:
 5. Building intensity: "We must..." / "We can..."
 6. Rallying cry: "Let us..."
 
-Include [pause] markers. Build from whisper to roar.""",
+Include audio tags like [softly], [pause], [firmly], [passionately], [shouts], [urgently] throughout. Build from whisper to roar.""",
 }
 
 
@@ -334,29 +401,27 @@ Include [pause] markers. Build from whisper to roar.""",
 #
 # PRODUCTION-TESTED VALUES (from ReWire Journey app):
 #   - Journey uses 1.7 words per second (WPS) = 102 WPM
-#   - This accounts for [pause] tokens, natural pauses, emotional delivery
+#   - This accounts for [pause] tokens, audio tags, natural pauses, emotional delivery
 #   - Tested across 1-minute to 10-minute tracks with consistent results
 #
 # Why 102 WPM works:
 #   - Raw ElevenLabs speech: ~150-165 WPM
-#   - After [pause] tokens: -15-20% time added
+#   - After [pause] tokens and audio tags: -15-20% time added
 #   - Emotional/dramatic pacing: -10-15% slower
 #   - Natural sentence pauses: -5-10% added time
 #   - Net effective rate: ~100-105 WPM
 #
-# Previous value of 140 WPM caused scripts to run 30-40% longer than music!
-#
-# SAFETY BUFFER:
-#   - We use 0.88 (12% shorter) to ensure speech ALWAYS ends before music
-#   - It's better to have music play alone for a few seconds at the end
-#     than to have voice talking after music stops
+# SAFETY FACTOR:
+#   - Set to 1.0 (100%) - speech fills the ENTIRE music duration
+#   - No artificial reduction - user controls timing via Speech Entry slider
+#   - If user wants speech to start late, they set Speech Entry > 0
 # =============================================================================
 
 DEFAULT_TTS_WPM = 102  # Production-tested: 1.7 words per second
 
-# Safety factor: Generate fewer words to ensure speech ends before music
-# 0.88 = 12% buffer (speech will be ~12% shorter than music duration)
-DEFAULT_SAFETY_FACTOR = 0.88
+# Safety factor: 1.0 = 100% = no reduction, speech fills entire music duration
+# User controls any delay via Speech Entry slider in the UI
+DEFAULT_SAFETY_FACTOR = 1.0
 
 
 # Word count instruction template - STRICT VERSION
@@ -374,15 +439,16 @@ This is NON-NEGOTIABLE because:
 - If you write too few words, there will be awkward silence
 
 INSTRUCTIONS:
-1. Write your piece
+1. Write your piece with emotional audio tags like [excited], [whispers], [pause], [sighs]
 2. COUNT EVERY WORD (including small words like "a", "the", "is")
-3. [pause] tokens do NOT count as words
+3. Audio tags in [square brackets] do NOT count as words (e.g., [pause], [whispers], [excited], [sighs])
 4. If you're over {target_words} words, CUT content until you reach the target
 5. If you're under, ADD content until you reach the target
 
 TARGET: {target_words} words = approximately {duration_estimate} of speech
 
 BEFORE YOU FINISH: Count your words one more time. You MUST be between {min_words} and {max_words} words.
+Audio tags like [pause], [whispers], [excited], [sighs] are FREE - use them generously for emotional delivery!
 ═══════════════════════════════════════════════════════════════════════════════
 """
 
@@ -431,6 +497,9 @@ def build_prompt(
     """
     if custom_system:
         system_prompt = custom_system
+        # Add audio tags instruction to custom system prompts too
+        if "[excited]" not in system_prompt and "[whispers]" not in system_prompt and "AUDIO TAGS" not in system_prompt:
+            system_prompt += AUDIO_TAGS_INSTRUCTION
     else:
         system_prompt = get_system_prompt(style)
     
@@ -461,6 +530,7 @@ def build_prompt(
     if target_words and target_words > 0:
         max_words = int(target_words * 1.02)
         user_prompt += f"\n\n⚠️ WORD COUNT: Write EXACTLY {target_words} words. MAXIMUM allowed: {max_words} words. Count carefully!"
+        user_prompt += f"\n💡 AUDIO TAGS: Use [excited], [whispers], [pause], [sighs], [softly], etc. freely - they don't count as words!"
     
     return system_prompt, user_prompt
 
@@ -473,13 +543,13 @@ def calculate_target_words(
     """
     Calculate target word count from audio duration.
     
-    This applies the safety factor to ensure speech ends before music.
+    This applies the safety factor to ensure speech fills the music duration.
     For more precise calculation with voice settings, use calculate_target_words_adjusted().
     
     Args:
         duration_ms: Duration in milliseconds
         words_per_minute: Speaking rate (default DEFAULT_TTS_WPM for emotional narration)
-        safety_factor: Multiply result by this to leave buffer (default 0.88 = 12% shorter)
+        safety_factor: Multiply result by this (default 1.0 = 100%, no reduction)
     
     Returns:
         Target word count
@@ -505,34 +575,33 @@ def calculate_target_words_adjusted(
     This provides more accurate word count by accounting for:
     - Voice speed setting (0.5x to 2.0x)
     - Speech entry delay (music plays before voice starts)
-    - Crossfade duration (voice should end before music fades completely)
-    - Safety factor to avoid speech running longer than music
+    - Crossfade duration (for reference only, not subtracted)
     
     Args:
         duration_ms: Total music duration in milliseconds
         voice_speed: ElevenLabs voice speed multiplier (0.5 to 2.0, default 1.0)
         speech_entry_ms: Delay before voice starts (ms), reduces available time
-        crossfade_ms: Crossfade duration at end (ms), voice should finish before this
+        crossfade_ms: Crossfade duration at end (ms) - NOT subtracted, handled by mixer
         base_wpm: Base words per minute at speed 1.0 (default 102 WPM)
-        safety_factor: Multiply result by this to leave buffer (default 0.88 = 12% shorter)
+        safety_factor: Multiply result by this (default 1.0 = 100%, no reduction)
     
     Returns:
         Target word count adjusted for all parameters
     
     Example:
-        6 min track (360000ms), speed 1.0x, 3000ms entry, 2000ms crossfade:
-        - Available time: 360000 - 3000 - 1000 = 356000ms = 5.93 min
+        6 min track (360000ms), speed 1.0x, 3000ms entry:
+        - Available time: 360000 - 3000 = 357000ms = 5.95 min
         - Adjusted WPM: 102 * 1.0 = 102
-        - Raw words: 5.93 * 102 = 605
-        - With safety: 605 * 0.88 = 532 words
+        - Raw words: 5.95 * 102 = 607
+        - With safety 1.0: 607 words (fills 100% of available time)
     """
     # Clamp voice_speed to valid range
     voice_speed = max(0.5, min(2.0, voice_speed))
     
     # Calculate effective duration for speech
-    # Speech starts after entry delay and should finish before crossfade ends
-    # We subtract half the crossfade as buffer for voice to finish naturally
-    effective_duration_ms = duration_ms - speech_entry_ms - (crossfade_ms / 2)
+    # Only subtract speech entry delay (user-controlled via UI slider)
+    # Crossfade is handled by the audio mixer, not word count
+    effective_duration_ms = duration_ms - speech_entry_ms
     effective_duration_ms = max(0, effective_duration_ms)
     
     # Convert to minutes
@@ -551,8 +620,7 @@ def calculate_target_words_adjusted(
     # Calculate raw word count
     raw_words = effective_minutes * adjusted_wpm
     
-    # Apply safety factor to ensure speech doesn't exceed music
-    # With 0.88 safety factor, speech will be ~12% shorter than available time
+    # Apply safety factor (default 1.0 = no reduction, fills 100%)
     target_words = int(raw_words * safety_factor)
     
     return max(10, target_words)  # Minimum 10 words
