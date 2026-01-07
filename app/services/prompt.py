@@ -327,6 +327,27 @@ Include [pause] markers. Build from whisper to roar.""",
 }
 
 
+# =============================================================================
+# TTS TIMING CONFIGURATION
+# =============================================================================
+# ElevenLabs TTS speaking rate varies by voice, settings, and content type.
+# Based on testing:
+#   - Raw speaking rate: ~150-165 WPM for most voices
+#   - With [pause] tokens: adds ~0.8-1.2 seconds each
+#   - Emotional/dramatic content: slower delivery
+#   - Punctuation (periods, commas, dashes): adds natural pauses
+#
+# Effective WPM after accounting for pauses and delivery style:
+#   - Fast/energetic content: ~140-150 WPM
+#   - Normal narration: ~125-135 WPM  
+#   - Slow/contemplative: ~110-120 WPM
+#
+# We use a conservative default that works for emotional content with pauses.
+# =============================================================================
+
+DEFAULT_TTS_WPM = 128  # Conservative default for emotional content with [pause] tokens
+
+
 # NEW: Word count instruction template
 WORD_COUNT_INSTRUCTION = """
 
@@ -350,7 +371,7 @@ def get_user_prompt(template: str, topic: str) -> str:
     return template_str.format(topic=topic)
 
 
-def _format_duration_estimate(target_words: int, words_per_minute: int = 140) -> str:
+def _format_duration_estimate(target_words: int, words_per_minute: int = DEFAULT_TTS_WPM) -> str:
     """Convert word count to estimated duration string."""
     total_seconds = int((target_words / words_per_minute) * 60)
     minutes = total_seconds // 60
@@ -410,13 +431,16 @@ def build_prompt(
     return system_prompt, user_prompt
 
 
-def calculate_target_words(duration_ms: int, words_per_minute: int = 140) -> int:
+def calculate_target_words(duration_ms: int, words_per_minute: int = DEFAULT_TTS_WPM) -> int:
     """
     Calculate target word count from audio duration.
     
+    This is the basic calculation without voice speed adjustment.
+    For more accurate calculation with voice settings, use calculate_target_words_adjusted().
+    
     Args:
         duration_ms: Duration in milliseconds
-        words_per_minute: Speaking rate (default 140 WPM for clear narration)
+        words_per_minute: Speaking rate (default DEFAULT_TTS_WPM for emotional narration)
     
     Returns:
         Target word count
@@ -424,7 +448,73 @@ def calculate_target_words(duration_ms: int, words_per_minute: int = 140) -> int
     duration_seconds = duration_ms / 1000
     duration_minutes = duration_seconds / 60
     target_words = int(duration_minutes * words_per_minute)
-    return target_words
+    return max(10, target_words)  # Minimum 10 words
+
+
+def calculate_target_words_adjusted(
+    duration_ms: int,
+    voice_speed: float = 1.0,
+    speech_entry_ms: int = 0,
+    base_wpm: int = DEFAULT_TTS_WPM,
+    safety_factor: float = 0.92,
+) -> int:
+    """
+    Calculate target word count with voice speed and timing adjustments.
+    
+    This provides more accurate word count by accounting for:
+    - Voice speed setting (0.5x to 2.0x)
+    - Speech entry delay (music plays before voice starts)
+    - Safety factor to avoid speech running longer than music
+    
+    Args:
+        duration_ms: Total music duration in milliseconds
+        voice_speed: ElevenLabs voice speed multiplier (0.5 to 2.0, default 1.0)
+        speech_entry_ms: Delay before voice starts (ms), reduces available time
+        base_wpm: Base words per minute at speed 1.0
+        safety_factor: Multiply result by this to leave buffer (default 0.92 = 8% shorter)
+    
+    Returns:
+        Target word count adjusted for all parameters
+    
+    Example:
+        6 min track (360000ms), speed 0.9x, 2000ms entry delay:
+        - Available time: 360000 - 2000 = 358000ms = 5.97 min
+        - Adjusted WPM: 128 * 0.9 = 115.2 (slower speed = fewer words per minute of audio)
+        - Raw words: 5.97 * 115.2 = 687
+        - With safety: 687 * 0.92 = 632 words
+    """
+    # Clamp voice_speed to valid range
+    voice_speed = max(0.5, min(2.0, voice_speed))
+    
+    # Subtract speech entry delay from available duration
+    available_duration_ms = max(0, duration_ms - speech_entry_ms)
+    
+    # Convert to minutes
+    available_minutes = available_duration_ms / 60000
+    
+    # Adjust WPM based on voice speed
+    # Lower speed = speech takes longer = fewer words fit in the same time
+    # Higher speed = speech is faster = more words fit
+    # 
+    # If voice_speed is 0.8x, the TTS speaks 20% slower, so:
+    #   - Same words take 25% more time (1/0.8 = 1.25)
+    #   - To fill the same duration, we need 20% fewer words
+    #   - Effective WPM = base_wpm * voice_speed
+    adjusted_wpm = base_wpm * voice_speed
+    
+    # Calculate raw word count
+    raw_words = available_minutes * adjusted_wpm
+    
+    # Apply safety factor to ensure speech doesn't exceed music
+    # It's better to end slightly early than to have voice continue after music stops
+    target_words = int(raw_words * safety_factor)
+    
+    return max(10, target_words)  # Minimum 10 words
+
+
+def get_default_tts_wpm() -> int:
+    """Get the default TTS words per minute value."""
+    return DEFAULT_TTS_WPM
 
 
 def list_styles() -> list:
