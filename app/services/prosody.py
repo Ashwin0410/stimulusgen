@@ -11,6 +11,7 @@ which is beyond the scope of this MVP.
 """
 
 import json
+import os
 import tempfile
 from pathlib import Path
 from typing import Optional, List
@@ -31,7 +32,9 @@ def extract_prosody(audio_path: str) -> dict:
     Returns dict with pitch, energy, and timing information.
     """
     try:
+        print(f"[Prosody] Extracting prosody from: {audio_path}")
         sound = parselmouth.Sound(audio_path)
+        print(f"[Prosody] Sound loaded: duration={sound.duration:.2f}s, sample_rate={sound.sampling_frequency}")
         
         # Extract pitch
         pitch = call(sound, "To Pitch", 0.0, 75, 600)
@@ -93,10 +96,13 @@ def extract_prosody(audio_path: str) -> dict:
             "voiced_ratio": len(pitch_values) / max(1, num_points),
         }
         
+        print(f"[Prosody] Extraction complete: pitch_mean={profile['pitch_mean']:.1f}Hz, pitch_std={profile['pitch_std']:.1f}Hz")
         return profile
         
     except Exception as e:
         print(f"[Prosody] Error extracting prosody: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             "duration_ms": 0,
             "pitch_mean": 0,
@@ -122,24 +128,35 @@ def get_prosody_profile(reference: str) -> Optional[dict]:
     Caches extracted profiles for faster subsequent access.
     """
     if reference == "none":
+        print(f"[Prosody] Reference is 'none', skipping profile load")
         return None
     
     prosody_dir = ASSETS_DIR / "prosody"
+    print(f"[Prosody] Looking for reference '{reference}' in {prosody_dir}")
+    
+    # Check if prosody directory exists
+    if not prosody_dir.exists():
+        print(f"[Prosody] WARNING: Prosody directory does not exist: {prosody_dir}")
+        return None
     
     if reference == "great_dictator":
         profile_path = prosody_dir / "great_dictator_profile.json"
         if profile_path.exists():
             try:
+                print(f"[Prosody] Loading cached profile from {profile_path}")
                 with open(profile_path, "r") as f:
-                    return json.load(f)
-            except Exception:
-                pass
+                    profile = json.load(f)
+                print(f"[Prosody] Loaded profile: pitch_mean={profile.get('pitch_mean', 0):.1f}Hz, pitch_std={profile.get('pitch_std', 0):.1f}Hz")
+                return profile
+            except Exception as e:
+                print(f"[Prosody] Error loading cached profile: {e}")
         
         # Try different extensions
         for ext in [".m4a", ".mp3", ".wav", ".ogg"]:
             audio_path = prosody_dir / f"great_dictator{ext}"
+            print(f"[Prosody] Checking for audio file: {audio_path}")
             if audio_path.exists():
-                print(f"[Prosody] Extracting profile from {audio_path}")
+                print(f"[Prosody] Found audio file, extracting profile from {audio_path}")
                 profile = extract_prosody(str(audio_path))
                 profile["source_file"] = str(audio_path)
                 profile["id"] = "great_dictator"
@@ -150,10 +167,19 @@ def get_prosody_profile(reference: str) -> Optional[dict]:
                 try:
                     with open(profile_path, "w") as f:
                         json.dump(profile, f, indent=2)
+                    print(f"[Prosody] Cached profile to {profile_path}")
                 except Exception as e:
                     print(f"[Prosody] Could not cache profile: {e}")
                 
                 return profile
+        
+        print(f"[Prosody] WARNING: No audio file found for great_dictator in {prosody_dir}")
+        # List what files ARE in the directory
+        try:
+            files = list(prosody_dir.iterdir())
+            print(f"[Prosody] Files in prosody directory: {[f.name for f in files]}")
+        except Exception as e:
+            print(f"[Prosody] Could not list directory: {e}")
         
         return None
     
@@ -165,12 +191,14 @@ def get_prosody_profile(reference: str) -> Optional[dict]:
             profile_path = prosody_dir / f"{audio_path.stem}_profile.json"
             if profile_path.exists():
                 try:
+                    print(f"[Prosody] Loading cached profile from {profile_path}")
                     with open(profile_path, "r") as f:
                         return json.load(f)
                 except Exception:
                     pass
             
             # Extract and cache
+            print(f"[Prosody] Extracting profile from {audio_path}")
             profile = extract_prosody(str(audio_path))
             profile["source_file"] = str(audio_path)
             profile["id"] = reference
@@ -179,11 +207,13 @@ def get_prosody_profile(reference: str) -> Optional[dict]:
             try:
                 with open(profile_path, "w") as f:
                     json.dump(profile, f, indent=2)
+                print(f"[Prosody] Cached profile to {profile_path}")
             except Exception:
                 pass
             
             return profile
     
+    print(f"[Prosody] WARNING: No profile found for reference '{reference}'")
     return None
 
 
@@ -208,24 +238,47 @@ def apply_prosody(
     Returns:
         Path to modified audio file
     """
+    print(f"[Prosody] ========== PROSODY TRANSFER START ==========")
+    print(f"[Prosody] Input: {voice_path}")
+    print(f"[Prosody] Reference: {reference}")
+    print(f"[Prosody] Intensity: {intensity}")
+    
+    # Get input file size for comparison
+    input_size = os.path.getsize(voice_path) if os.path.exists(voice_path) else 0
+    print(f"[Prosody] Input file size: {input_size} bytes")
+    
     if reference == "none" or intensity <= 0:
+        print(f"[Prosody] Skipping: reference={reference}, intensity={intensity}")
+        print(f"[Prosody] ========== PROSODY TRANSFER END (SKIPPED) ==========")
         return voice_path
     
     profile = get_prosody_profile(reference)
     if not profile:
-        print(f"[Prosody] No profile found for reference: {reference}")
+        print(f"[Prosody] ERROR: No profile found for reference: {reference}")
+        print(f"[Prosody] ========== PROSODY TRANSFER END (NO PROFILE) ==========")
         return voice_path
+    
+    print(f"[Prosody] Target profile loaded:")
+    print(f"[Prosody]   - pitch_mean: {profile.get('pitch_mean', 0):.1f} Hz")
+    print(f"[Prosody]   - pitch_std: {profile.get('pitch_std', 0):.1f} Hz")
+    print(f"[Prosody]   - pitch_range: {profile.get('pitch_range', 0):.1f} Hz")
     
     try:
         sound = parselmouth.Sound(voice_path)
+        print(f"[Prosody] Source audio loaded: duration={sound.duration:.2f}s")
         
         # Extract source pitch characteristics
         pitch = call(sound, "To Pitch", 0.0, 75, 600)
         source_mean = call(pitch, "Get mean", 0, 0, "Hertz")
         source_std = call(pitch, "Get standard deviation", 0, 0, "Hertz")
         
+        print(f"[Prosody] Source pitch analysis:")
+        print(f"[Prosody]   - source_mean: {source_mean:.1f} Hz")
+        print(f"[Prosody]   - source_std: {source_std:.1f} Hz")
+        
         if source_mean <= 0 or source_std <= 0:
-            print("[Prosody] Could not analyze source pitch")
+            print("[Prosody] ERROR: Could not analyze source pitch (mean or std <= 0)")
+            print(f"[Prosody] ========== PROSODY TRANSFER END (ANALYSIS FAILED) ==========")
             return voice_path
         
         target_mean = profile.get("pitch_mean", source_mean)
@@ -233,8 +286,10 @@ def apply_prosody(
         
         if target_mean <= 0:
             target_mean = source_mean
+            print(f"[Prosody] WARNING: Target mean invalid, using source mean")
         if target_std <= 0:
             target_std = source_std
+            print(f"[Prosody] WARNING: Target std invalid, using source std")
         
         # Calculate transformations based on intensity
         # Pitch shift factor (move toward target mean)
@@ -245,23 +300,32 @@ def apply_prosody(
         range_scale = 1 + (target_std / source_std - 1) * intensity * 0.5
         range_scale = max(0.5, min(2.0, range_scale))
         
-        print(f"[Prosody] Applying transfer: mean_shift={mean_shift:.2f}, range_scale={range_scale:.2f}")
+        print(f"[Prosody] Calculated transformations:")
+        print(f"[Prosody]   - mean_shift: {mean_shift:.3f} (target/source = {target_mean:.1f}/{source_mean:.1f})")
+        print(f"[Prosody]   - range_scale: {range_scale:.3f} (target/source std = {target_std:.1f}/{source_std:.1f})")
         
         # Create manipulation object
+        print(f"[Prosody] Creating manipulation object...")
         manipulation = call(sound, "To Manipulation", 0.01, 75, 600)
         pitch_tier = call(manipulation, "Extract pitch tier")
         
+        num_points_before = call(pitch_tier, "Get number of points")
+        print(f"[Prosody] Pitch tier has {num_points_before} points")
+        
         # Apply pitch shift
+        print(f"[Prosody] Applying pitch shift (multiply by {mean_shift:.3f})...")
         call(pitch_tier, "Multiply frequencies", sound.xmin, sound.xmax, mean_shift)
         
         # Apply range scaling (expand or compress pitch variation)
         if abs(range_scale - 1.0) > 0.05:
+            print(f"[Prosody] Applying range scaling ({range_scale:.3f})...")
             # Get all pitch points
             num_points = call(pitch_tier, "Get number of points")
             if num_points > 0:
                 # Calculate new mean after shift
                 new_mean = source_mean * mean_shift
                 
+                points_modified = 0
                 # Scale each point's distance from mean
                 for i in range(1, num_points + 1):
                     time = call(pitch_tier, "Get time from index", i)
@@ -273,8 +337,14 @@ def apply_prosody(
                         new_value = max(50, min(500, new_value))  # Clamp to reasonable range
                         call(pitch_tier, "Remove point", i)
                         call(pitch_tier, "Add point", time, new_value)
+                        points_modified += 1
+                
+                print(f"[Prosody] Modified {points_modified} pitch points")
+        else:
+            print(f"[Prosody] Skipping range scaling (scale {range_scale:.3f} too close to 1.0)")
         
         # Replace pitch tier and resynthesize
+        print(f"[Prosody] Resynthesizing audio...")
         call([manipulation, pitch_tier], "Replace pitch tier")
         new_sound = call(manipulation, "Get resynthesis (overlap-add)")
         
@@ -282,13 +352,40 @@ def apply_prosody(
         out_path = tempfile.NamedTemporaryFile(delete=False, suffix=".wav").name
         new_sound.save(out_path, "WAV")
         
-        print(f"[Prosody] Transfer complete: {out_path}")
+        # Verify output
+        output_size = os.path.getsize(out_path) if os.path.exists(out_path) else 0
+        print(f"[Prosody] Output file: {out_path}")
+        print(f"[Prosody] Output file size: {output_size} bytes")
+        
+        # Quick verification: analyze output pitch
+        try:
+            out_sound = parselmouth.Sound(out_path)
+            out_pitch = call(out_sound, "To Pitch", 0.0, 75, 600)
+            out_mean = call(out_pitch, "Get mean", 0, 0, "Hertz")
+            out_std = call(out_pitch, "Get standard deviation", 0, 0, "Hertz")
+            
+            print(f"[Prosody] ========== VERIFICATION ==========")
+            print(f"[Prosody] Before: mean={source_mean:.1f}Hz, std={source_std:.1f}Hz")
+            print(f"[Prosody] After:  mean={out_mean:.1f}Hz, std={out_std:.1f}Hz")
+            print(f"[Prosody] Target: mean={target_mean:.1f}Hz, std={target_std:.1f}Hz")
+            print(f"[Prosody] Change: mean={out_mean - source_mean:+.1f}Hz, std={out_std - source_std:+.1f}Hz")
+            
+            # Check if prosody actually changed
+            if abs(out_mean - source_mean) < 1.0 and abs(out_std - source_std) < 1.0:
+                print(f"[Prosody] WARNING: Pitch barely changed! Prosody transfer may not be working.")
+            else:
+                print(f"[Prosody] SUCCESS: Pitch modified successfully.")
+        except Exception as ve:
+            print(f"[Prosody] WARNING: Could not verify output: {ve}")
+        
+        print(f"[Prosody] ========== PROSODY TRANSFER END (SUCCESS) ==========")
         return out_path
         
     except Exception as e:
-        print(f"[Prosody] Error applying prosody: {e}")
+        print(f"[Prosody] ERROR: Exception during prosody transfer: {e}")
         import traceback
         traceback.print_exc()
+        print(f"[Prosody] ========== PROSODY TRANSFER END (FAILED) ==========")
         return voice_path
 
 
@@ -363,11 +460,18 @@ def list_prosody_references() -> list:
 def preload_profiles():
     """Pre-extract and cache all prosody profiles."""
     prosody_dir = ASSETS_DIR / "prosody"
+    print(f"[Prosody] Preloading profiles from {prosody_dir}")
+    
     if not prosody_dir.exists():
+        print(f"[Prosody] WARNING: Prosody directory does not exist: {prosody_dir}")
         return
+    
+    files_found = 0
+    profiles_created = 0
     
     for f in prosody_dir.iterdir():
         if f.suffix.lower() in [".mp3", ".wav", ".m4a", ".ogg"]:
+            files_found += 1
             stem = f.stem
             profile_path = prosody_dir / f"{stem}_profile.json"
             if not profile_path.exists():
@@ -379,5 +483,51 @@ def preload_profiles():
                 try:
                     with open(profile_path, "w") as pf:
                         json.dump(profile, pf, indent=2)
+                    profiles_created += 1
+                    print(f"[Prosody] Saved profile: {profile_path}")
                 except Exception as e:
                     print(f"[Prosody] Could not save profile: {e}")
+            else:
+                print(f"[Prosody] Profile already exists: {profile_path}")
+    
+    print(f"[Prosody] Preload complete: {files_found} audio files, {profiles_created} new profiles created")
+
+
+def verify_prosody_setup() -> dict:
+    """
+    Verify prosody setup is correct.
+    Call this to diagnose prosody transfer issues.
+    
+    Returns dict with diagnostic information.
+    """
+    prosody_dir = ASSETS_DIR / "prosody"
+    
+    result = {
+        "prosody_dir": str(prosody_dir),
+        "prosody_dir_exists": prosody_dir.exists(),
+        "audio_files": [],
+        "profile_files": [],
+        "great_dictator_audio": None,
+        "great_dictator_profile": None,
+        "parselmouth_version": parselmouth.__version__ if hasattr(parselmouth, '__version__') else "unknown",
+    }
+    
+    if prosody_dir.exists():
+        for f in prosody_dir.iterdir():
+            if f.suffix.lower() in [".mp3", ".wav", ".m4a", ".ogg"]:
+                result["audio_files"].append(f.name)
+                if "great_dictator" in f.name.lower():
+                    result["great_dictator_audio"] = str(f)
+            elif f.suffix.lower() == ".json":
+                result["profile_files"].append(f.name)
+                if "great_dictator" in f.name.lower():
+                    result["great_dictator_profile"] = str(f)
+    
+    # Try to load great_dictator profile
+    profile = get_prosody_profile("great_dictator")
+    result["great_dictator_profile_loaded"] = profile is not None
+    if profile:
+        result["great_dictator_pitch_mean"] = profile.get("pitch_mean", 0)
+        result["great_dictator_pitch_std"] = profile.get("pitch_std", 0)
+    
+    return result
