@@ -167,9 +167,9 @@ async def calculate_words_from_duration(
         duration_ms: Duration in milliseconds
         voice_speed: ElevenLabs voice speed multiplier (0.5 to 2.0, default 1.0)
         speech_entry_ms: Delay before voice starts in ms (default 0)
-        crossfade_ms: Crossfade duration at end in ms (default 2000)
+        crossfade_ms: Crossfade duration at end in ms (default 2000, used by mixer only)
         wpm: Words per minute override (optional, uses default 102 if not specified)
-        safety_factor: Safety buffer override (optional, uses default 0.88 if not specified)
+        safety_factor: Safety buffer override (optional, uses default 1.0 if not specified)
     
     Returns:
         target_words and calculation details
@@ -191,8 +191,8 @@ async def calculate_words_from_duration(
         safety_factor=used_safety_factor,
     )
     
-    # Calculate effective duration
-    effective_duration_ms = duration_ms - speech_entry_ms - (crossfade_ms / 2)
+    # Calculate effective duration (only subtract speech entry, crossfade is handled by mixer)
+    effective_duration_ms = duration_ms - speech_entry_ms
     effective_duration_ms = max(0, effective_duration_ms)
     
     # Format durations
