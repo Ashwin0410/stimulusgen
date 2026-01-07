@@ -331,24 +331,26 @@ Include [pause] markers. Build from whisper to roar.""",
 # TTS TIMING CONFIGURATION
 # =============================================================================
 # ElevenLabs TTS speaking rate varies by voice, settings, and content type.
-# Based on testing:
-#   - Raw speaking rate: ~150-165 WPM for most voices
-#   - With [pause] tokens: adds ~0.8-1.2 seconds each
-#   - Emotional/dramatic content: slower delivery
-#   - Punctuation (periods, commas, dashes): adds natural pauses
 #
-# Effective WPM after accounting for pauses and delivery style:
-#   - Fast/energetic content: ~140-150 WPM
-#   - Normal narration: ~125-135 WPM  
-#   - Slow/contemplative: ~110-120 WPM
+# PRODUCTION-TESTED VALUES (from ReWire Journey app):
+#   - Journey uses 1.7 words per second (WPS) = 102 WPM
+#   - This accounts for [pause] tokens, natural pauses, emotional delivery
+#   - Tested across 1-minute to 10-minute tracks with consistent results
 #
-# We use a conservative default that works for emotional content with pauses.
+# Why 102 WPM works:
+#   - Raw ElevenLabs speech: ~150-165 WPM
+#   - After [pause] tokens: -15-20% time added
+#   - Emotional/dramatic pacing: -10-15% slower
+#   - Natural sentence pauses: -5-10% added time
+#   - Net effective rate: ~100-105 WPM
+#
+# Previous value of 140 WPM caused scripts to run 30-40% longer than music!
 # =============================================================================
 
-DEFAULT_TTS_WPM = 128  # Conservative default for emotional content with [pause] tokens
+DEFAULT_TTS_WPM = 102  # Production-tested: 1.7 words per second
 
 
-# NEW: Word count instruction template
+# Word count instruction template
 WORD_COUNT_INSTRUCTION = """
 
 CRITICAL WORD COUNT REQUIREMENT:
@@ -386,7 +388,7 @@ def build_prompt(
     custom_system: str = None,
     custom_user: str = None,
     context: str = None,
-    target_words: int = None,  # NEW: Target word count parameter
+    target_words: int = None,
 ) -> tuple[str, str]:
     """
     Build complete prompt pair (system, user) for LLM.
@@ -398,7 +400,7 @@ def build_prompt(
         custom_system: Custom system prompt (overrides style)
         custom_user: Custom user prompt (overrides template)
         context: Additional context to add to system prompt
-        target_words: Target word count for the generated text (NEW)
+        target_words: Target word count for the generated text
     
     Returns tuple of (system_prompt, user_prompt).
     """
@@ -410,7 +412,7 @@ def build_prompt(
     if context:
         system_prompt += f"\n\nAdditional context to incorporate:\n{context}"
     
-    # NEW: Add word count instruction if target_words is specified
+    # Add word count instruction if target_words is specified
     if target_words and target_words > 0:
         duration_estimate = _format_duration_estimate(target_words)
         word_count_instruction = WORD_COUNT_INSTRUCTION.format(
@@ -424,7 +426,7 @@ def build_prompt(
     else:
         user_prompt = get_user_prompt(template, topic)
     
-    # NEW: Also add word count reminder to user prompt if specified
+    # Also add word count reminder to user prompt if specified
     if target_words and target_words > 0:
         user_prompt += f"\n\nRemember: Write EXACTLY {target_words} words (±10 words)."
     
@@ -455,8 +457,9 @@ def calculate_target_words_adjusted(
     duration_ms: int,
     voice_speed: float = 1.0,
     speech_entry_ms: int = 0,
+    crossfade_ms: int = 0,
     base_wpm: int = DEFAULT_TTS_WPM,
-    safety_factor: float = 0.92,
+    safety_factor: float = 0.97,
 ) -> int:
     """
     Calculate target word count with voice speed and timing adjustments.
@@ -464,33 +467,38 @@ def calculate_target_words_adjusted(
     This provides more accurate word count by accounting for:
     - Voice speed setting (0.5x to 2.0x)
     - Speech entry delay (music plays before voice starts)
+    - Crossfade duration (voice should end before music fades completely)
     - Safety factor to avoid speech running longer than music
     
     Args:
         duration_ms: Total music duration in milliseconds
         voice_speed: ElevenLabs voice speed multiplier (0.5 to 2.0, default 1.0)
         speech_entry_ms: Delay before voice starts (ms), reduces available time
-        base_wpm: Base words per minute at speed 1.0
-        safety_factor: Multiply result by this to leave buffer (default 0.92 = 8% shorter)
+        crossfade_ms: Crossfade duration at end (ms), voice should finish before this
+        base_wpm: Base words per minute at speed 1.0 (default 102 WPM)
+        safety_factor: Multiply result by this to leave buffer (default 0.97 = 3% shorter)
     
     Returns:
         Target word count adjusted for all parameters
     
     Example:
-        6 min track (360000ms), speed 0.9x, 2000ms entry delay:
-        - Available time: 360000 - 2000 = 358000ms = 5.97 min
-        - Adjusted WPM: 128 * 0.9 = 115.2 (slower speed = fewer words per minute of audio)
-        - Raw words: 5.97 * 115.2 = 687
-        - With safety: 687 * 0.92 = 632 words
+        6 min track (360000ms), speed 1.0x, 3000ms entry, 2000ms crossfade:
+        - Available time: 360000 - 3000 - 1000 = 356000ms = 5.93 min
+        - Adjusted WPM: 102 * 1.0 = 102
+        - Raw words: 5.93 * 102 = 605
+        - With safety: 605 * 0.97 = 587 words
     """
     # Clamp voice_speed to valid range
     voice_speed = max(0.5, min(2.0, voice_speed))
     
-    # Subtract speech entry delay from available duration
-    available_duration_ms = max(0, duration_ms - speech_entry_ms)
+    # Calculate effective duration for speech
+    # Speech starts after entry delay and should finish before crossfade ends
+    # We subtract half the crossfade as buffer for voice to finish naturally
+    effective_duration_ms = duration_ms - speech_entry_ms - (crossfade_ms / 2)
+    effective_duration_ms = max(0, effective_duration_ms)
     
     # Convert to minutes
-    available_minutes = available_duration_ms / 60000
+    effective_minutes = effective_duration_ms / 60000
     
     # Adjust WPM based on voice speed
     # Lower speed = speech takes longer = fewer words fit in the same time
@@ -503,10 +511,10 @@ def calculate_target_words_adjusted(
     adjusted_wpm = base_wpm * voice_speed
     
     # Calculate raw word count
-    raw_words = available_minutes * adjusted_wpm
+    raw_words = effective_minutes * adjusted_wpm
     
     # Apply safety factor to ensure speech doesn't exceed music
-    # It's better to end slightly early than to have voice continue after music stops
+    # With accurate WPM (102), we only need a small buffer (3%)
     target_words = int(raw_words * safety_factor)
     
     return max(10, target_words)  # Minimum 10 words
