@@ -12,10 +12,14 @@ let currentMusicDuration = null; // Store music duration in ms
 // =============================================================================
 // Production-tested value: 102 WPM (1.7 words per second)
 // This accounts for [pause] tokens, natural pauses, and emotional delivery.
-// With accurate WPM, we only need a small safety buffer (3%).
+//
+// SAFETY BUFFER: 0.88 (12% shorter)
+// We generate fewer words to ensure speech ALWAYS ends before music.
+// It's better to have music play alone for a few seconds at the end
+// than to have voice talking after music stops.
 // =============================================================================
 const BASE_TTS_WPM = 102; // Production-tested: matches Journey app
-const TTS_SAFETY_BUFFER = 0.97; // Small 3% buffer since WPM is accurate
+const TTS_SAFETY_BUFFER = 0.88; // 12% buffer to ensure speech ends before music
 
 async function initGenerator() {
   // Check if editing existing stimulus
@@ -620,7 +624,7 @@ async function handleMusicUpload(e) {
   }
 }
 
-// Calculate target words accounting for voice speed, speech entry, and TTS buffer
+// Calculate target words accounting for voice speed, speech entry, and safety buffer
 function calculateTargetWordsFromDuration(durationMs) {
   if (!durationMs || durationMs <= 0) return null;
 
@@ -658,7 +662,7 @@ function calculateTargetWordsFromDuration(durationMs) {
   const effectiveDurationMinutes = effectiveDurationMs / 1000 / 60;
   let targetWords = Math.round(effectiveDurationMinutes * adjustedWpm);
 
-  // Apply safety buffer (small 3% since WPM is now accurate)
+  // Apply safety buffer (12% shorter to ensure speech ends before music)
   targetWords = Math.round(targetWords * TTS_SAFETY_BUFFER);
 
   console.log(
@@ -689,13 +693,33 @@ async function onMusicTrackChange(trackPath) {
   }
 
   try {
-    // Fetch duration from API
-    const data = await api.music.getDuration(trackPath);
+    // Get current voice parameters for accurate calculation
+    const voiceSpeed = parseFloat(
+      document.getElementById("voice-speed")?.value || 1.0
+    );
+    const speechEntryMs = parseInt(
+      document.getElementById("music-entry")?.value || 0
+    );
+    const crossfadeMs = parseInt(
+      document.getElementById("music-crossfade")?.value || 2000
+    );
+
+    // Fetch duration from API with voice parameters for accurate calculation
+    const data = await api.music.getDuration(
+      trackPath,
+      voiceSpeed,
+      speechEntryMs,
+      crossfadeMs
+    );
 
     currentMusicDuration = data.duration_ms;
 
-    // Calculate target words with current settings
-    currentTargetWords = calculateTargetWordsFromDuration(currentMusicDuration);
+    // Use backend-calculated target words if available, otherwise calculate locally
+    if (data.target_words) {
+      currentTargetWords = data.target_words;
+    } else {
+      currentTargetWords = calculateTargetWordsFromDuration(currentMusicDuration);
+    }
 
     // Update UI
     updateMusicDurationDisplay();
@@ -842,13 +866,14 @@ function updateWordCount() {
       const percentage = Math.round((wordCount / currentTargetWords) * 100);
 
       let status;
-      // Increased tolerance to ±50 words (LLMs aren't perfectly precise)
-      if (Math.abs(diff) <= 50) {
+      // Tolerance: Allow ±5% of target (with 12% buffer, being slightly under is fine)
+      const tolerance = Math.max(20, Math.round(currentTargetWords * 0.05));
+      if (Math.abs(diff) <= tolerance) {
         status = "✅ Good!";
       } else if (diff > 0) {
-        status = "⚠️ too long";
+        status = "⚠️ too long - speech may exceed music";
       } else {
-        status = "⚠️ too short";
+        status = "ℹ️ short - but buffer will help";
       }
 
       displayText += ` | Target: ${currentTargetWords} (${diffStr}, ${percentage}%) ${status}`;
@@ -903,7 +928,13 @@ async function generateText() {
       const diffStr = diff >= 0 ? `+${diff}` : `${diff}`;
       successMsg += ` (target: ${result.target_words}, ${diffStr})`;
     }
-    utils.showSuccess(successMsg);
+    
+    // Show warning from backend if present
+    if (result.word_count_warning) {
+      utils.showWarning(result.word_count_warning);
+    } else {
+      utils.showSuccess(successMsg);
+    }
   } catch (error) {
     utils.showError("Text generation failed: " + error.message);
   } finally {
@@ -1011,8 +1042,8 @@ async function generateAudio() {
       if (currentMusicDuration) {
         const diff = result.duration_ms - currentMusicDuration;
         const diffFormatted = utils.formatDuration(Math.abs(diff));
-        // Allow 5 seconds tolerance for "matches"
-        if (Math.abs(diff) < 5000) {
+        // Allow 10 seconds tolerance for "matches" (increased from 5s due to larger buffer)
+        if (Math.abs(diff) < 10000) {
           successMsg += ` ✅ (matches music!)`;
         } else if (diff > 0) {
           successMsg += ` ⚠️ (+${diffFormatted} longer than music)`;
