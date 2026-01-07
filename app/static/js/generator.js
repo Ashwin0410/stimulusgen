@@ -11,15 +11,14 @@ let currentMusicDuration = null; // Store music duration in ms
 // TTS TIMING CONFIGURATION
 // =============================================================================
 // Production-tested value: 102 WPM (1.7 words per second)
-// This accounts for [pause] tokens, natural pauses, and emotional delivery.
+// This accounts for [pause] tokens, audio tags, natural pauses, and emotional delivery.
 //
-// SAFETY BUFFER: 0.88 (12% shorter)
-// We generate fewer words to ensure speech ALWAYS ends before music.
-// It's better to have music play alone for a few seconds at the end
-// than to have voice talking after music stops.
+// SAFETY BUFFER: 1.0 (100% - no reduction)
+// Speech fills the ENTIRE music duration. User controls any delay via Speech Entry.
+// Crossfade is handled by the audio mixer, not word count calculation.
 // =============================================================================
 const BASE_TTS_WPM = 102; // Production-tested: matches Journey app
-const TTS_SAFETY_BUFFER = 0.88; // 12% buffer to ensure speech ends before music
+const TTS_SAFETY_BUFFER = 1.0; // 100% = no reduction, speech fills entire music duration
 
 async function initGenerator() {
   // Check if editing existing stimulus
@@ -510,9 +509,10 @@ function setupEventListeners() {
     recalculateTargetWords();
   });
 
-  // Crossfade change - recalculate target words
+  // Crossfade change - NO LONGER affects word count, but keep listener for UI updates
   document.getElementById("music-crossfade")?.addEventListener("input", () => {
-    recalculateTargetWords();
+    // Crossfade is handled by the mixer, not word count
+    // No need to recalculate target words
   });
 
   // Manual target words input change
@@ -624,7 +624,8 @@ async function handleMusicUpload(e) {
   }
 }
 
-// Calculate target words accounting for voice speed, speech entry, and safety buffer
+// Calculate target words accounting for voice speed and speech entry
+// Speech fills 100% of available time (no artificial buffer)
 function calculateTargetWordsFromDuration(durationMs) {
   if (!durationMs || durationMs <= 0) return null;
 
@@ -638,15 +639,10 @@ function calculateTargetWordsFromDuration(durationMs) {
     document.getElementById("music-entry")?.value || 0
   );
 
-  // Get crossfade duration (voice should end before music fades out completely)
-  const crossfadeMs = parseInt(
-    document.getElementById("music-crossfade")?.value || 2000
-  );
-
   // Calculate effective duration for speech
-  // Speech starts after entry delay and should finish before crossfade ends
-  // We give some buffer (half the crossfade) for the voice to finish naturally
-  const effectiveDurationMs = durationMs - speechEntryMs - crossfadeMs / 2;
+  // Only subtract speech entry delay (user-controlled via UI)
+  // Crossfade is handled by the audio mixer, not word count
+  const effectiveDurationMs = durationMs - speechEntryMs;
 
   if (effectiveDurationMs <= 0) {
     console.warn("Effective duration is zero or negative");
@@ -662,19 +658,17 @@ function calculateTargetWordsFromDuration(durationMs) {
   const effectiveDurationMinutes = effectiveDurationMs / 1000 / 60;
   let targetWords = Math.round(effectiveDurationMinutes * adjustedWpm);
 
-  // Apply safety buffer (12% shorter to ensure speech ends before music)
+  // Apply safety buffer (1.0 = 100% = no reduction, fills entire duration)
   targetWords = Math.round(targetWords * TTS_SAFETY_BUFFER);
 
   console.log(
-    `Music: ${durationMs}ms, Entry: ${speechEntryMs}ms, Crossfade: ${crossfadeMs}ms`
+    `Music: ${durationMs}ms, Entry: ${speechEntryMs}ms`
   );
   console.log(
     `Effective: ${effectiveDurationMs}ms, Speed: ${voiceSpeed}x, WPM: ${adjustedWpm}`
   );
   console.log(
-    `Target words (with ${Math.round(
-      (1 - TTS_SAFETY_BUFFER) * 100
-    )}% buffer): ${targetWords}`
+    `Target words (100% fill): ${targetWords}`
   );
 
   return targetWords;
@@ -805,7 +799,7 @@ function updateTargetWordsDisplay() {
     if (voiceSpeed !== 1.0) {
       displayText += ` | Speed: ${voiceSpeed}x`;
     }
-    displayText += ` | Buffer: ${Math.round((1 - TTS_SAFETY_BUFFER) * 100)}%`;
+    displayText += ` | Fill: 100%`;
     displayText += `</span>`;
 
     if (targetDisplay) {
@@ -866,14 +860,14 @@ function updateWordCount() {
       const percentage = Math.round((wordCount / currentTargetWords) * 100);
 
       let status;
-      // Tolerance: Allow ±5% of target (with 12% buffer, being slightly under is fine)
+      // Tolerance: Allow ±5% of target
       const tolerance = Math.max(20, Math.round(currentTargetWords * 0.05));
       if (Math.abs(diff) <= tolerance) {
         status = "✅ Good!";
       } else if (diff > 0) {
         status = "⚠️ too long - speech may exceed music";
       } else {
-        status = "ℹ️ short - but buffer will help";
+        status = "⚠️ too short - may have silence at end";
       }
 
       displayText += ` | Target: ${currentTargetWords} (${diffStr}, ${percentage}%) ${status}`;
@@ -1042,13 +1036,13 @@ async function generateAudio() {
       if (currentMusicDuration) {
         const diff = result.duration_ms - currentMusicDuration;
         const diffFormatted = utils.formatDuration(Math.abs(diff));
-        // Allow 10 seconds tolerance for "matches" (increased from 5s due to larger buffer)
-        if (Math.abs(diff) < 10000) {
+        // Allow 5 seconds tolerance for "matches"
+        if (Math.abs(diff) < 5000) {
           successMsg += ` ✅ (matches music!)`;
         } else if (diff > 0) {
           successMsg += ` ⚠️ (+${diffFormatted} longer than music)`;
         } else {
-          successMsg += ` ✅ (-${diffFormatted} shorter - good!)`;
+          successMsg += ` ⚠️ (-${diffFormatted} shorter than music)`;
         }
       }
       utils.showSuccess(successMsg);
