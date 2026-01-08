@@ -487,16 +487,16 @@ Include audio tags like [softly], [pause], [firmly], [passionately], [shouts], [
 #   - Net effective rate: ~100-105 WPM
 #
 # SAFETY FACTOR:
-#   - Set to 1.0 (100%) - speech fills the ENTIRE music duration
-#   - No artificial reduction - user controls timing via Speech Entry slider
-#   - If user wants speech to start late, they set Speech Entry > 0
+#   - Set to 0.95 (95%) - speech ends slightly before music
+#   - Provides ~5% buffer so voice finishes before music ends
+#   - User can fine-tune via Speech Entry slider if needed
 # =============================================================================
 
 DEFAULT_TTS_WPM = 102  # Production-tested: 1.7 words per second
 
-# Safety factor: 1.0 = 100% = no reduction, speech fills entire music duration
-# User controls any delay via Speech Entry slider in the UI
-DEFAULT_SAFETY_FACTOR = 1.0
+# Safety factor: 0.95 = 95% = generates 5% fewer words so speech ends before music
+# This ensures the voice finishes slightly before the music track ends
+DEFAULT_SAFETY_FACTOR = 0.95
 
 
 # Word count instruction template - STRICT VERSION
@@ -624,7 +624,7 @@ def calculate_target_words(
     Args:
         duration_ms: Duration in milliseconds
         words_per_minute: Speaking rate (default DEFAULT_TTS_WPM for emotional narration)
-        safety_factor: Multiply result by this (default 1.0 = 100%, no reduction)
+        safety_factor: Multiply result by this (default 0.95 = 95%, speech ends before music)
     
     Returns:
         Target word count
@@ -658,7 +658,7 @@ def calculate_target_words_adjusted(
         speech_entry_ms: Delay before voice starts (ms), reduces available time
         crossfade_ms: Crossfade duration at end (ms) - NOT subtracted, handled by mixer
         base_wpm: Base words per minute at speed 1.0 (default 102 WPM)
-        safety_factor: Multiply result by this (default 1.0 = 100%, no reduction)
+        safety_factor: Multiply result by this (default 0.95 = 95%, speech ends before music)
     
     Returns:
         Target word count adjusted for all parameters
@@ -668,7 +668,7 @@ def calculate_target_words_adjusted(
         - Available time: 360000 - 3000 = 357000ms = 5.95 min
         - Adjusted WPM: 102 * 1.0 = 102
         - Raw words: 5.95 * 102 = 607
-        - With safety 1.0: 607 words (fills 100% of available time)
+        - With safety 0.95: 577 words (fills 95% of available time)
     """
     # Clamp voice_speed to valid range
     voice_speed = max(0.5, min(2.0, voice_speed))
@@ -695,7 +695,7 @@ def calculate_target_words_adjusted(
     # Calculate raw word count
     raw_words = effective_minutes * adjusted_wpm
     
-    # Apply safety factor (default 1.0 = no reduction, fills 100%)
+    # Apply safety factor (default 0.95 = 5% reduction, speech ends before music)
     target_words = int(raw_words * safety_factor)
     
     return max(10, target_words)  # Minimum 10 words
