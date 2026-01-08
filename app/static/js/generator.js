@@ -13,12 +13,12 @@ let currentMusicDuration = null; // Store music duration in ms
 // Production-tested value: 102 WPM (1.7 words per second)
 // This accounts for [pause] tokens, audio tags, natural pauses, and emotional delivery.
 //
-// SAFETY BUFFER: 1.0 (100% - no reduction)
-// Speech fills the ENTIRE music duration. User controls any delay via Speech Entry.
+// SAFETY BUFFER: 0.95 (95% - generates 5% fewer words)
+// Speech ends slightly before music to prevent voice extending past music end.
 // Crossfade is handled by the audio mixer, not word count calculation.
 // =============================================================================
 const BASE_TTS_WPM = 102; // Production-tested: matches Journey app
-const TTS_SAFETY_BUFFER = 1.0; // 100% = no reduction, speech fills entire music duration
+const TTS_SAFETY_BUFFER = 0.95; // 95% = 5% reduction, speech ends before music
 
 async function initGenerator() {
   // Check if editing existing stimulus
@@ -625,7 +625,7 @@ async function handleMusicUpload(e) {
 }
 
 // Calculate target words accounting for voice speed and speech entry
-// Speech fills 100% of available time (no artificial buffer)
+// Speech fills 95% of available time (5% buffer so voice ends before music)
 function calculateTargetWordsFromDuration(durationMs) {
   if (!durationMs || durationMs <= 0) return null;
 
@@ -658,7 +658,7 @@ function calculateTargetWordsFromDuration(durationMs) {
   const effectiveDurationMinutes = effectiveDurationMs / 1000 / 60;
   let targetWords = Math.round(effectiveDurationMinutes * adjustedWpm);
 
-  // Apply safety buffer (1.0 = 100% = no reduction, fills entire duration)
+  // Apply safety buffer (0.95 = 95% = 5% reduction, speech ends before music)
   targetWords = Math.round(targetWords * TTS_SAFETY_BUFFER);
 
   console.log(
@@ -668,7 +668,7 @@ function calculateTargetWordsFromDuration(durationMs) {
     `Effective: ${effectiveDurationMs}ms, Speed: ${voiceSpeed}x, WPM: ${adjustedWpm}`
   );
   console.log(
-    `Target words (100% fill): ${targetWords}`
+    `Target words (95% fill): ${targetWords}`
   );
 
   return targetWords;
@@ -799,7 +799,7 @@ function updateTargetWordsDisplay() {
     if (voiceSpeed !== 1.0) {
       displayText += ` | Speed: ${voiceSpeed}x`;
     }
-    displayText += ` | Fill: 100%`;
+    displayText += ` | Fill: 95%`;
     displayText += `</span>`;
 
     if (targetDisplay) {
