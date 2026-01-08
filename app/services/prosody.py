@@ -25,15 +25,108 @@ from pydub import AudioSegment
 from app.config import ASSETS_DIR, FFMPEG_BIN
 
 
+def _convert_to_wav(audio_path: str) -> str:
+    """
+    Convert audio file to WAV format for Parselmouth compatibility.
+    
+    Parselmouth (Praat) cannot read .m4a files directly.
+    This function converts any audio format to WAV using FFmpeg.
+    
+    Args:
+        audio_path: Path to input audio file
+        
+    Returns:
+        Path to WAV file (either original if already WAV, or converted temp file)
+    """
+    # If already WAV, return as-is
+    if audio_path.lower().endswith('.wav'):
+        return audio_path
+    
+    print(f"[Prosody] Converting {audio_path} to WAV for Parselmouth compatibility...")
+    
+    try:
+        # Create temp WAV file
+        temp_wav = tempfile.NamedTemporaryFile(delete=False, suffix=".wav").name
+        
+        # Use FFmpeg to convert
+        ffmpeg = FFMPEG_BIN or "ffmpeg"
+        cmd = [
+            ffmpeg,
+            "-i", audio_path,
+            "-ar", "44100",  # Sample rate
+            "-ac", "1",       # Mono
+            "-y",             # Overwrite
+            temp_wav
+        ]
+        
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=60
+        )
+        
+        if result.returncode != 0:
+            print(f"[Prosody] FFmpeg conversion failed: {result.stderr}")
+            return audio_path  # Return original, let caller handle the error
+        
+        if os.path.exists(temp_wav) and os.path.getsize(temp_wav) > 0:
+            print(f"[Prosody] Converted to WAV: {temp_wav}")
+            return temp_wav
+        else:
+            print(f"[Prosody] Conversion produced empty file")
+            return audio_path
+            
+    except Exception as e:
+        print(f"[Prosody] Conversion error: {e}")
+        return audio_path
+
+
+def _is_valid_profile(profile: dict) -> bool:
+    """
+    Check if a prosody profile has valid (non-zero) values.
+    
+    A profile with pitch_mean=0 or pitch_std=0 is invalid and 
+    indicates extraction failed.
+    
+    Args:
+        profile: Prosody profile dictionary
+        
+    Returns:
+        True if profile is valid, False otherwise
+    """
+    if not profile:
+        return False
+    
+    pitch_mean = profile.get("pitch_mean", 0)
+    pitch_std = profile.get("pitch_std", 0)
+    
+    # Valid speech typically has pitch_mean between 75-400 Hz
+    # and pitch_std > 0 (some variation)
+    if pitch_mean <= 0 or pitch_std <= 0:
+        return False
+    
+    return True
+
+
 def extract_prosody(audio_path: str) -> dict:
     """
     Extract prosody features from audio file.
     
     Returns dict with pitch, energy, and timing information.
     """
+    # Track if we created a temp file for cleanup
+    temp_wav_path = None
+    
     try:
         print(f"[Prosody] Extracting prosody from: {audio_path}")
-        sound = parselmouth.Sound(audio_path)
+        
+        # Convert to WAV if needed (Parselmouth can't read .m4a)
+        wav_path = _convert_to_wav(audio_path)
+        if wav_path != audio_path:
+            temp_wav_path = wav_path  # Mark for cleanup
+        
+        sound = parselmouth.Sound(wav_path)
         print(f"[Prosody] Sound loaded: duration={sound.duration:.2f}s, sample_rate={sound.sampling_frequency}")
         
         # Extract pitch
@@ -73,7 +166,7 @@ def extract_prosody(audio_path: str) -> dict:
                 "middle": float(middle_third),
                 "end": float(last_third),
                 "shape": "rising" if last_third > first_third else "falling",
-                "has_peak": middle_third > first_third and middle_third > last_third,
+                "has_peak": bool(middle_third > first_third and middle_third > last_third),
             }
         else:
             trajectory = None
@@ -120,6 +213,14 @@ def extract_prosody(audio_path: str) -> dict:
             "num_voiced_frames": 0,
             "voiced_ratio": 0,
         }
+    finally:
+        # Cleanup temp WAV file if we created one
+        if temp_wav_path and os.path.exists(temp_wav_path):
+            try:
+                os.unlink(temp_wav_path)
+                print(f"[Prosody] Cleaned up temp WAV: {temp_wav_path}")
+            except Exception:
+                pass
 
 
 def get_prosody_profile(reference: str) -> Optional[dict]:
@@ -141,13 +242,27 @@ def get_prosody_profile(reference: str) -> Optional[dict]:
     
     if reference == "great_dictator":
         profile_path = prosody_dir / "great_dictator_profile.json"
+        
+        # Try to load cached profile
         if profile_path.exists():
             try:
                 print(f"[Prosody] Loading cached profile from {profile_path}")
                 with open(profile_path, "r") as f:
                     profile = json.load(f)
                 print(f"[Prosody] Loaded profile: pitch_mean={profile.get('pitch_mean', 0):.1f}Hz, pitch_std={profile.get('pitch_std', 0):.1f}Hz")
-                return profile
+                
+                # VALIDATION: Check if profile has valid (non-zero) values
+                if _is_valid_profile(profile):
+                    return profile
+                else:
+                    print(f"[Prosody] WARNING: Cached profile has invalid/zero values! Will re-extract.")
+                    # Delete the invalid cache file
+                    try:
+                        os.unlink(profile_path)
+                        print(f"[Prosody] Deleted invalid cache: {profile_path}")
+                    except Exception as e:
+                        print(f"[Prosody] Could not delete invalid cache: {e}")
+                    
             except Exception as e:
                 print(f"[Prosody] Error loading cached profile: {e}")
         
@@ -158,6 +273,12 @@ def get_prosody_profile(reference: str) -> Optional[dict]:
             if audio_path.exists():
                 print(f"[Prosody] Found audio file, extracting profile from {audio_path}")
                 profile = extract_prosody(str(audio_path))
+                
+                # Verify extraction succeeded
+                if not _is_valid_profile(profile):
+                    print(f"[Prosody] WARNING: Extraction produced invalid profile (pitch_mean={profile.get('pitch_mean', 0):.1f}Hz)")
+                    continue  # Try next extension
+                
                 profile["source_file"] = str(audio_path)
                 profile["id"] = "great_dictator"
                 profile["name"] = "Great Dictator (Chaplin)"
@@ -193,25 +314,41 @@ def get_prosody_profile(reference: str) -> Optional[dict]:
                 try:
                     print(f"[Prosody] Loading cached profile from {profile_path}")
                     with open(profile_path, "r") as f:
-                        return json.load(f)
+                        profile = json.load(f)
+                    
+                    # VALIDATION: Check if profile has valid values
+                    if _is_valid_profile(profile):
+                        return profile
+                    else:
+                        print(f"[Prosody] WARNING: Cached profile has invalid/zero values! Will re-extract.")
+                        try:
+                            os.unlink(profile_path)
+                            print(f"[Prosody] Deleted invalid cache: {profile_path}")
+                        except Exception:
+                            pass
                 except Exception:
                     pass
             
             # Extract and cache
             print(f"[Prosody] Extracting profile from {audio_path}")
             profile = extract_prosody(str(audio_path))
-            profile["source_file"] = str(audio_path)
-            profile["id"] = reference
-            profile["name"] = audio_path.stem.replace("_", " ").title()
             
-            try:
-                with open(profile_path, "w") as f:
-                    json.dump(profile, f, indent=2)
-                print(f"[Prosody] Cached profile to {profile_path}")
-            except Exception:
-                pass
-            
-            return profile
+            # Only cache if valid
+            if _is_valid_profile(profile):
+                profile["source_file"] = str(audio_path)
+                profile["id"] = reference
+                profile["name"] = audio_path.stem.replace("_", " ").title()
+                
+                try:
+                    with open(profile_path, "w") as f:
+                        json.dump(profile, f, indent=2)
+                    print(f"[Prosody] Cached profile to {profile_path}")
+                except Exception:
+                    pass
+                
+                return profile
+            else:
+                print(f"[Prosody] WARNING: Extraction failed for {audio_path}")
     
     print(f"[Prosody] WARNING: No profile found for reference '{reference}'")
     return None
@@ -256,6 +393,12 @@ def apply_prosody(
     if not profile:
         print(f"[Prosody] ERROR: No profile found for reference: {reference}")
         print(f"[Prosody] ========== PROSODY TRANSFER END (NO PROFILE) ==========")
+        return voice_path
+    
+    # VALIDATION: Check if profile is valid
+    if not _is_valid_profile(profile):
+        print(f"[Prosody] ERROR: Profile has invalid values (pitch_mean={profile.get('pitch_mean', 0):.1f}Hz)")
+        print(f"[Prosody] ========== PROSODY TRANSFER END (INVALID PROFILE) ==========")
         return voice_path
     
     print(f"[Prosody] Target profile loaded:")
@@ -462,6 +605,12 @@ def apply_prosody_with_diagnostics(
     profile = get_prosody_profile(reference)
     if not profile:
         result["error"] = f"No profile found for reference: {reference}"
+        print(f"[Prosody] ERROR: {result['error']}")
+        return result
+    
+    # VALIDATION: Check if profile is valid
+    if not _is_valid_profile(profile):
+        result["error"] = f"Profile has invalid values (pitch_mean={profile.get('pitch_mean', 0):.1f}Hz, pitch_std={profile.get('pitch_std', 0):.1f}Hz)"
         print(f"[Prosody] ERROR: {result['error']}")
         return result
     
@@ -674,29 +823,53 @@ def preload_profiles():
     
     files_found = 0
     profiles_created = 0
+    profiles_invalid = 0
     
     for f in prosody_dir.iterdir():
         if f.suffix.lower() in [".mp3", ".wav", ".m4a", ".ogg"]:
             files_found += 1
             stem = f.stem
             profile_path = prosody_dir / f"{stem}_profile.json"
-            if not profile_path.exists():
-                print(f"[Prosody] Pre-extracting profile for {f.name}")
-                profile = extract_prosody(str(f))
-                profile["source_file"] = str(f)
-                profile["id"] = stem
-                profile["name"] = stem.replace("_", " ").title()
+            
+            # Check if existing profile is valid
+            need_extract = True
+            if profile_path.exists():
                 try:
-                    with open(profile_path, "w") as pf:
-                        json.dump(profile, pf, indent=2)
-                    profiles_created += 1
-                    print(f"[Prosody] Saved profile: {profile_path}")
-                except Exception as e:
-                    print(f"[Prosody] Could not save profile: {e}")
-            else:
-                print(f"[Prosody] Profile already exists: {profile_path}")
+                    with open(profile_path, "r") as pf:
+                        existing_profile = json.load(pf)
+                    if _is_valid_profile(existing_profile):
+                        print(f"[Prosody] Valid profile exists: {profile_path}")
+                        need_extract = False
+                    else:
+                        print(f"[Prosody] Existing profile is invalid (zeros), will re-extract: {profile_path}")
+                        profiles_invalid += 1
+                        try:
+                            os.unlink(profile_path)
+                        except Exception:
+                            pass
+                except Exception:
+                    pass
+            
+            if need_extract:
+                print(f"[Prosody] Extracting profile for {f.name}")
+                profile = extract_prosody(str(f))
+                
+                # Only save if valid
+                if _is_valid_profile(profile):
+                    profile["source_file"] = str(f)
+                    profile["id"] = stem
+                    profile["name"] = stem.replace("_", " ").title()
+                    try:
+                        with open(profile_path, "w") as pf:
+                            json.dump(profile, pf, indent=2)
+                        profiles_created += 1
+                        print(f"[Prosody] Saved profile: {profile_path} (pitch_mean={profile['pitch_mean']:.1f}Hz)")
+                    except Exception as e:
+                        print(f"[Prosody] Could not save profile: {e}")
+                else:
+                    print(f"[Prosody] WARNING: Extraction failed for {f.name} - profile has zero values")
     
-    print(f"[Prosody] Preload complete: {files_found} audio files, {profiles_created} new profiles created")
+    print(f"[Prosody] Preload complete: {files_found} audio files, {profiles_created} new profiles created, {profiles_invalid} invalid profiles replaced")
 
 
 def verify_prosody_setup() -> dict:
@@ -747,17 +920,15 @@ def verify_prosody_setup() -> dict:
         result["great_dictator_pitch_std"] = profile.get("pitch_std", 0)
         
         # Check if profile values are valid
-        if profile.get("pitch_mean", 0) <= 0:
-            result["issues"].append("great_dictator profile has invalid pitch_mean")
-        if profile.get("pitch_std", 0) <= 0:
-            result["issues"].append("great_dictator profile has invalid pitch_std")
+        if not _is_valid_profile(profile):
+            result["issues"].append("great_dictator profile has invalid/zero values")
     else:
         result["issues"].append("Could not load great_dictator profile")
     
     # Set overall status
     if len(result["issues"]) == 0:
         result["status"] = "ok"
-    elif result["great_dictator_profile_loaded"]:
+    elif result["great_dictator_profile_loaded"] and _is_valid_profile(profile):
         result["status"] = "warning"
     else:
         result["status"] = "error"
