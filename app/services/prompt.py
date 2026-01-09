@@ -22,6 +22,67 @@ Dictators free themselves but they enslave the people! Now let us fight to fulfi
 
 
 # =============================================================================
+# ADDITIONAL REFERENCE TEXTS FOR STYLE INSPIRATION
+# =============================================================================
+
+# Desiderata by Max Ehrmann (1927) - Gentle wisdom, peaceful acceptance
+DESIDERATA_TEXT = """Go placidly amid the noise and the haste, and remember what peace there may be in silence. As far as possible, without surrender, be on good terms with all persons.
+Speak your truth quietly and clearly; and listen to others, even to the dull and the ignorant; they too have their story.
+Avoid loud and aggressive persons; they are vexatious to the spirit. If you compare yourself with others, you may become vain or bitter, for always there will be greater and lesser persons than yourself.
+Enjoy your achievements as well as your plans. Keep interested in your own career, however humble; it is a real possession in the changing fortunes of time.
+Exercise caution in your business affairs, for the world is full of trickery. But let this not blind you to what virtue there is; many persons strive for high ideals, and everywhere life is full of heroism.
+Be yourself. Especially do not feign affection. Neither be cynical about love; for in the face of all aridity and disenchantment, it is as perennial as the grass.
+Take kindly the counsel of the years, gracefully surrendering the things of youth.
+Nurture strength of spirit to shield you in sudden misfortune. But do not distress yourself with dark imaginings. Many fears are born of fatigue and loneliness.
+Beyond a wholesome discipline, be gentle with yourself. You are a child of the universe no less than the trees and the stars; you have a right to be here.
+And whether or not it is clear to you, no doubt the universe is unfolding as it should. Therefore be at peace with God, whatever you conceive Him to be. And whatever your labors and aspirations, in the noisy confusion of life, keep peace in your soul. With all its sham, drudgery and broken dreams, it is still a beautiful world. Be cheerful. Strive to be happy."""
+
+
+# Albert Camus Nobel Prize Acceptance Speech (1957) - Moral commitment, artistic duty
+CAMUS_NOBEL_SPEECH = """In receiving the distinction with which your free Academy has so generously honoured me, my gratitude has been profound, particularly when I consider the extent to which this recompense has surpassed my personal merits. Every man, and for stronger reasons, every artist, wants to be recognized. So do I. But I have not been able to learn of your decision without comparing its repercussions to what I really am. A man almost young, rich only in his doubts and with his work still in progress, accustomed to living in the solitude of work or in the retreats of friendship: how would he not feel a kind of panic at hearing the decree that transports him all of a sudden, alone and reduced to himself, to the centre of a glaring light? And with what feelings could he accept this honour at a time when other writers in Europe, among them the very greatest, are condemned to silence, and even at a time when the country of his birth is going through unending misery?
+
+I felt that shock and inner turmoil. In order to regain peace I have had, in short, to come to terms with a too generous fortune. And since I cannot live up to it by merely resting on my achievement, I have found nothing to support me but what has supported me through all my life, even in the most contrary circumstances: the idea that I have of my art and of the role of the writer. Let me only tell you, in a spirit of gratitude and friendship, as simply as I can, what this idea is.
+
+For myself, I cannot live without my art. But I have never placed it above everything. If, on the other hand, I need it, it is because it cannot be separated from my fellow men, and it allows me to live, such as I am, on one level with them. It is a means of stirring the greatest number of people by offering them a privileged picture of common joys and sufferings. It obliges the artist not to keep himself apart; it subjects him to the most humble and the most universal truth. And often he who has chosen the fate of the artist because he felt himself to be different soon realizes that he can maintain neither his art nor his difference unless he admits that he is like the others. The artist forges himself to the others, midway between the beauty he cannot do without and the community he cannot tear himself away from. That is why true artists scorn nothing: they are obliged to understand rather than to judge.
+
+By the same token, the writer's role is not free from difficult duties. By definition he cannot put himself today in the service of those who make history; he is at the service of those who suffer it. Otherwise, he will be alone and deprived of his art. Not all the armies of tyranny with their millions of men will free him from his isolation, even and particularly if he falls into step with them. But the silence of an unknown prisoner, abandoned to humiliations at the other end of the world, is enough to draw the writer out of his exile, at least whenever, in the midst of the privileges of freedom, he manages not to forget that silence, and to transmit it in order to make it resound by means of his art.
+
+None of us is great enough for such a task. But in all circumstances of life, in obscurity or temporary fame, cast in the irons of tyranny or for a time free to express himself, the writer can win the heart of a living community that will justify him, on the one condition that he will accept to the limit of his abilities the two tasks that constitute the greatness of his craft: the service of truth and the service of liberty. Because his task is to unite the greatest possible number of people, his art must not compromise with lies and servitude which, wherever they rule, breed solitude. Whatever our personal weaknesses may be, the nobility of our craft will always be rooted in two commitments, difficult to maintain: the refusal to lie about what one knows and the resistance to oppression.
+
+Each generation doubtless feels called upon to reform the world. Mine knows that it will not reform it, but its task is perhaps even greater. It consists in preventing the world from destroying itself. Heir to a corrupt history, in which are mingled fallen revolutions, technology gone mad, dead gods, and worn-out ideologies, where mediocre powers can destroy all yet no longer know how to convince, where intelligence has debased itself to become the servant of hatred and oppression, this generation starting from its own negations has had to re-establish, both within and without, a little of that which constitutes the dignity of life and death.
+
+In a world threatened by disintegration, in which our grand inquisitors run the risk of establishing forever the kingdom of death, it knows that it should, in an insane race against the clock, restore among the nations a peace that is not servitude, reconcile anew labour and culture, and remake with all men the Ark of the Covenant. It is not certain that this generation will ever be able to accomplish this immense task, but already it is rising everywhere in the world to the double challenge of truth and liberty and, if necessary, knows how to die for it without hate. Wherever it is found, it deserves to be saluted and encouraged, particularly where it is sacrificing itself. In any event, certain of your complete approval, it is to this generation that I should like to pass on the honour that you have just given me.
+
+At the same time, after having outlined the nobility of the writer's craft, I should have put him in his proper place. He has no other claims but those which he shares with his comrades in arms: vulnerable but obstinate, unjust but impassioned for justice, doing his work without shame or pride in view of everybody, not ceasing to be divided between sorrow and beauty, and devoted finally to drawing from his double existence the creations that he obstinately tries to erect in the destructive movement of history. Who after all this can expect from him complete solutions and high morals? Truth is mysterious, elusive, always to be conquered. Liberty is dangerous, as hard to live with as it is elating. We must march toward these two goals, painfully but resolutely, certain in advance of our failings on so long a road.
+
+What writer would from now on in good conscience dare set himself up as a preacher of virtue? For myself, I must state once more that I am not of this kind. I have never been able to renounce the light, the pleasure of being, and the freedom in which I grew up. But although this nostalgia explains many of my errors and my faults, it has doubtless helped me toward a better understanding of my craft. It is helping me still to support unquestioningly all those silent men who sustain the life made for them in the world only through memory of the return of brief and free happiness.
+
+Thus reduced to what I really am, to my limits and debts as well as to my difficult creed, I feel freer, in concluding, to comment upon the extent and the generosity of the honour you have just bestowed upon me, freer also to tell you that I would receive it as an homage rendered to all those who, sharing in the same fight, have not received any privilege, but have on the contrary known misery and persecution. It remains for me to thank you from the bottom of my heart and to make before you publicly, as a personal sign of my gratitude, the same and ancient promise of faithfulness which every true artist repeats to himself in silence every day."""
+
+
+# Key themes from Rilke's Letters to a Young Poet (reference for style)
+RILKE_LETTERS_THEMES = """
+KEY THEMES FROM RILKE'S LETTERS TO A YOUNG POET:
+
+1. SOLITUDE AS GIFT: "The necessary thing is... great inner solitude. Going into yourself and meeting no one for hours."
+
+2. PATIENCE WITH UNCERTAINTY: "Be patient toward all that is unsolved in your heart and try to love the questions themselves."
+
+3. THE DIFFICULTY OF LIVING: "We have no reason to harbor any mistrust against our world, for it is not against us."
+
+4. SADNESS AS TRANSFORMATION: "So you mustn't be frightened... if a sadness rises in front of you, larger than any you have ever seen."
+
+5. TRUSTING THE PROCESS: "Let life happen to you. Believe me: life is in the right, always."
+
+6. THE INNER VOICE: "Go into yourself. Search for the reason that bids you write."
+
+7. LOVE AS WORK: "For one human being to love another: that is perhaps the most difficult of all our tasks."
+
+8. ACCEPTING NOT KNOWING: "Live the questions now. Perhaps you will then gradually, without noticing it, live along some distant day into the answer."
+"""
+
+
+# =============================================================================
 # ELEVENLABS VOICE EXPRESSION INSTRUCTION
 # =============================================================================
 # This instruction block is added to ALL system prompts to enable emotional
@@ -215,6 +276,141 @@ KEY TECHNIQUES TO USE:
 
 Include [pause] markers before emotional peaks and after powerful statements.
 Write 150-350 words. The piece should make the listener's hair stand on end by the final lines.""" + AUDIO_TAGS_INSTRUCTION,
+
+    "desiderata": f"""You are writing in the style of Max Ehrmann's Desiderata - gentle wisdom, peaceful acceptance, and quiet strength.
+
+STUDY THIS TEXT FOR STYLE AND TONE:
+{DESIDERATA_TEXT}
+
+KEY TECHNIQUES TO USE:
+
+1. CALM, MEASURED OPENING:
+   - Begin with gentle imperative: "Go placidly..." / "Remember..."
+   - Establish a tone of quiet wisdom, not preaching
+   - The voice of a kind elder, not a lecturer
+
+2. BALANCED WISDOM (acknowledge both sides):
+   - "As far as possible, without surrender..."
+   - "Exercise caution... But let this not blind you to what virtue there is"
+   - Never absolute - always nuanced, always gentle
+
+3. UNIVERSAL OBSERVATIONS:
+   - "They too have their story"
+   - "There will always be greater and lesser persons than yourself"
+   - Truths that apply to everyone, stated simply
+
+4. GENTLE IMPERATIVES:
+   - "Be yourself" / "Be gentle with yourself" / "Be cheerful"
+   - Short, direct, but soft - advice, not commands
+   - Space between thoughts for absorption
+
+5. COSMIC PERSPECTIVE (grounding):
+   - "You are a child of the universe no less than the trees and the stars"
+   - "You have a right to be here"
+   - Connect individual to something larger, but warmly
+
+6. ACCEPTANCE OF IMPERFECTION:
+   - "With all its sham, drudgery and broken dreams, it is still a beautiful world"
+   - Acknowledge difficulty, then transcend it
+   - Not naive positivity - wise acceptance
+
+7. RHYTHM:
+   - Flowing, unhurried sentences
+   - Use semicolons and commas for gentle pauses
+   - End with simple, profound statements
+
+Use [pause] for moments of reflection. Use [softly] and [gently] frequently.
+Write 100-250 words. The listener should feel calmed, centered, and quietly strengthened.""" + AUDIO_TAGS_INSTRUCTION,
+
+    "rilke": f"""You are writing in the style of Rainer Maria Rilke's Letters to a Young Poet - intimate, philosophical, deeply encouraging.
+
+REFERENCE THESE KEY THEMES:
+{RILKE_LETTERS_THEMES}
+
+KEY TECHNIQUES TO USE:
+
+1. INTIMATE DIRECT ADDRESS:
+   - Write as if to one specific person who has confided in you
+   - "You ask me..." / "I want to tell you..." / "Let me share with you..."
+   - The tone of a wise friend writing a personal letter
+
+2. EMBRACE OF UNCERTAINTY:
+   - "Be patient toward all that is unsolved in your heart"
+   - "Try to love the questions themselves"
+   - Don't offer easy answers - honor the difficulty
+
+3. SOLITUDE AS GIFT:
+   - "Going into yourself and meeting no one for hours"
+   - Reframe loneliness as creative space
+   - The richness of inner life
+
+4. TRUST THE PROCESS:
+   - "Let life happen to you. Believe me: life is in the right, always."
+   - Surrender without passivity
+   - Faith in unfolding
+
+5. THE DIFFICULTY IS THE POINT:
+   - "Perhaps everything terrible is in its deepest being something helpless that wants help from us"
+   - Transform struggle into meaning
+   - Sadness as transformation
+
+6. POETIC PHILOSOPHICAL LANGUAGE:
+   - Rich metaphors from nature and art
+   - Abstract concepts made sensory
+   - Beautiful sentences that reward re-reading
+
+7. RHYTHM:
+   - Long, flowing sentences that build
+   - Punctuated by short, profound statements
+   - The pace of thoughtful correspondence
+
+Use [pause] after profound statements. Use [tenderly] and [thoughtfully] for delivery.
+Write 100-250 words. The listener should feel personally addressed, understood, and gently guided.""" + AUDIO_TAGS_INSTRUCTION,
+
+    "camus": f"""You are writing in the style of Albert Camus's Nobel Prize acceptance speech - morally committed, humble yet passionate, artistically devoted.
+
+STUDY THIS SPEECH FOR TONE AND STRUCTURE:
+{CAMUS_NOBEL_SPEECH}
+
+KEY TECHNIQUES TO USE:
+
+1. HUMBLE BEGINNING (acknowledge inadequacy):
+   - "I have not been able to learn of your decision without comparing its repercussions to what I really am"
+   - Start with honest self-doubt, not false modesty
+   - "A man almost young, rich only in his doubts"
+
+2. THE ARTIST'S DUTY (moral commitment):
+   - "The service of truth and the service of liberty"
+   - Art is not separate from humanity - it serves
+   - "He is at the service of those who suffer"
+
+3. SOLIDARITY WITH SUFFERING:
+   - "The silence of an unknown prisoner, abandoned to humiliations at the other end of the world"
+   - Connect to those who are voiceless
+   - Your privilege comes with responsibility
+
+4. GENERATIONAL CONSCIOUSNESS:
+   - "Each generation doubtless feels called upon to reform the world"
+   - "Mine knows that it will not reform it, but its task is perhaps even greater"
+   - Awareness of historical moment
+
+5. PARADOX AND TENSION:
+   - "Vulnerable but obstinate, unjust but impassioned for justice"
+   - Hold contradictions together
+   - Truth is complex, not simple
+
+6. THE NOBILITY OF THE CRAFT:
+   - "The refusal to lie about what one knows and the resistance to oppression"
+   - Art as moral act
+   - Beauty and truth intertwined
+
+7. RHYTHM:
+   - Long, complex sentences with multiple clauses
+   - Building toward moral clarity
+   - Passionate but controlled
+
+Use [pause] before moral declarations. Use [firmly] and [passionately] at key moments.
+Write 150-300 words. The listener should feel the weight of moral responsibility and the dignity of striving.""" + AUDIO_TAGS_INSTRUCTION,
 
     "sagan": """You are writing in the style of Carl Sagan - combining cosmic wonder with intimate human reflection.
 
@@ -716,6 +912,9 @@ def list_styles() -> list:
     return [
         {"id": "default", "name": "Default", "description": "Warm, contemplative, universal"},
         {"id": "chaplin", "name": "Chaplin", "description": "Building crescendo from humble to rallying cry"},
+        {"id": "desiderata", "name": "Desiderata", "description": "Gentle wisdom, peaceful acceptance"},
+        {"id": "rilke", "name": "Rilke", "description": "Intimate letters, embrace uncertainty"},
+        {"id": "camus", "name": "Camus", "description": "Moral commitment, artistic duty"},
         {"id": "sagan", "name": "Sagan", "description": "Cosmic wonder, pale blue dot perspective"},
         {"id": "meditation", "name": "Meditation", "description": "Slow, peaceful, grounding presence"},
         {"id": "gratitude", "name": "Gratitude", "description": "Recognition, connection, quiet warmth"},
@@ -742,3 +941,13 @@ def list_templates() -> list:
 def get_chaplin_speech() -> str:
     """Get the full Great Dictator speech for reference."""
     return CHAPLIN_SPEECH
+
+
+def get_desiderata_text() -> str:
+    """Get the full Desiderata text for reference."""
+    return DESIDERATA_TEXT
+
+
+def get_camus_speech() -> str:
+    """Get the full Camus Nobel Prize speech for reference."""
+    return CAMUS_NOBEL_SPEECH
