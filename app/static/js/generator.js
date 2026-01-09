@@ -1,4 +1,3 @@
-
 /**
  * Generator page functionality
  */
@@ -133,9 +132,9 @@ async function loadExistingStimulus(stimulusId) {
       await onMusicTrackChange(stimulus.music.track);
     }
 
-    // Show existing audio if available
+    // Show existing audio if available (no auto-play for loaded stimuli)
     if (stimulus.audio_url) {
-      showAudioPreview(stimulus.audio_url);
+      showAudioPreview(stimulus.audio_url, false);
     }
 
     utils.showInfo(`Loaded stimulus ${stimulusId}`);
@@ -1028,7 +1027,8 @@ async function generateAudio() {
     const result = await api.generate.direct(formData);
 
     if (result.status === "generated" && result.audio_url) {
-      showAudioPreview(result.audio_url);
+      // Show audio preview with auto-play enabled
+      showAudioPreview(result.audio_url, true);
 
       // Show duration comparison with music
       let successMsg = `Generated ${utils.formatDuration(
@@ -1067,19 +1067,30 @@ async function generateAudio() {
   }
 }
 
-function showAudioPreview(audioUrl) {
+function showAudioPreview(audioUrl, autoPlay = false) {
   const container = document.getElementById("audio-preview");
   if (container) {
     container.innerHTML = `
             <div class="audio-player">
                 <div class="audio-player-label">Generated Audio</div>
-                <audio controls src="${audioUrl}" style="width: 100%;"></audio>
+                <audio id="preview-audio" controls src="${audioUrl}" style="width: 100%;"></audio>
                 <div style="margin-top: 0.5rem; display: flex; gap: 0.5rem;">
                     <a href="${audioUrl}" download class="btn btn-sm btn-secondary">Download MP3</a>
                     <button class="btn btn-sm btn-secondary" onclick="utils.copyToClipboard('${window.location.origin}${audioUrl}')">Copy URL</button>
                 </div>
             </div>
         `;
+
+    // Auto-play if requested (for fresh generations)
+    if (autoPlay) {
+      const audioElement = document.getElementById("preview-audio");
+      if (audioElement) {
+        audioElement.play().catch((err) => {
+          // Browser may block auto-play without user interaction
+          console.log("Auto-play prevented by browser:", err);
+        });
+      }
+    }
   }
 }
 
