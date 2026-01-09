@@ -897,7 +897,11 @@ async function generateText() {
       targetWords = currentTargetWords;
     }
 
-    const result = await api.llm.generate({
+    // Get custom prompt if provided
+    const customPrompt = document.getElementById("llm-custom-prompt")?.value?.trim() || null;
+
+    // Build the API request
+    const requestData = {
       topic: topic,
       style: document.getElementById("llm-style")?.value || "default",
       template: document.getElementById("llm-template")?.value || "about_topic",
@@ -909,7 +913,14 @@ async function generateText() {
       ),
       max_tokens: 1500, // Increased to allow for longer texts
       target_words: targetWords,
-    });
+    };
+
+    // If custom prompt is provided, it replaces the template
+    if (customPrompt) {
+      requestData.custom_user_prompt = customPrompt;
+    }
+
+    const result = await api.llm.generate(requestData);
 
     document.getElementById("speech-text").value = result.text;
     updateWordCount();
@@ -921,6 +932,11 @@ async function generateText() {
       const diff = actualWords - result.target_words;
       const diffStr = diff >= 0 ? `+${diff}` : `${diff}`;
       successMsg += ` (target: ${result.target_words}, ${diffStr})`;
+    }
+    
+    // Note if custom prompt was used
+    if (customPrompt) {
+      successMsg += " [custom prompt]";
     }
     
     // Show warning from backend if present
