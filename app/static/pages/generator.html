@@ -287,6 +287,39 @@
                     />
                   </div>
 
+                  <!-- Custom Prompt Section -->
+                  <div
+                    class="form-group"
+                    style="
+                      margin-top: 1rem;
+                      padding-top: 1rem;
+                      border-top: 1px solid var(--border-color);
+                    "
+                  >
+                    <label class="form-label">
+                      Custom Prompt 
+                      <span style="font-weight: normal; color: var(--text-muted);">(optional)</span>
+                    </label>
+                    <textarea
+                      id="llm-custom-prompt"
+                      class="form-textarea"
+                      rows="4"
+                      placeholder="Write your own instructions for the AI...
+
+Example: Write a piece about finding peace after loss. Use gentle, flowing sentences. Start with a memory, build to acceptance, end with quiet hope. Include imagery of water and light."
+                      style="font-size: 0.9rem;"
+                    ></textarea>
+                    <p
+                      style="
+                        font-size: 0.75rem;
+                        color: var(--text-muted);
+                        margin-top: 0.25rem;
+                      "
+                    >
+                      If provided, this replaces the Template. Style is still applied for tone/structure guidance.
+                    </p>
+                  </div>
+
                   <!-- Target Words Input -->
                   <div
                     class="form-group"
