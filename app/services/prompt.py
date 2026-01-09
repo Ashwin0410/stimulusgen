@@ -38,48 +38,72 @@ Beyond a wholesome discipline, be gentle with yourself. You are a child of the u
 And whether or not it is clear to you, no doubt the universe is unfolding as it should. Therefore be at peace with God, whatever you conceive Him to be. And whatever your labors and aspirations, in the noisy confusion of life, keep peace in your soul. With all its sham, drudgery and broken dreams, it is still a beautiful world. Be cheerful. Strive to be happy."""
 
 
+# Excerpts from Rilke's Letters to a Young Poet (1903-1908) - Intimate, philosophical, encouraging
+RILKE_LETTERS_TEXT = """From Letter One (Paris, February 17, 1903):
+
+Ask yourself in the most silent hour of your night: must I write? Dig into yourself for a deep answer. And if this answer rings out in assent, if you meet this solemn question with a strong, simple "I must," then build your life in accordance with this necessity; your whole life, even into its humblest and most indifferent hour, must become a sign and witness to this impulse.
+
+A work of art is good if it has arisen out of necessity. That is the only way one can judge it.
+
+---
+
+From Letter Two (Viareggio, April 5, 1903):
+
+Of course, you must know that every letter of yours will always give me pleasure, and you must be indulgent with the answer, which will perhaps often leave you empty-handed; for ultimately, and precisely in the deepest and most important matters, we are unspeakably alone; and many things must happen, many things must go right, a whole constellation of events must be fulfilled, for one human being to successfully advise or help another.
+
+---
+
+From Letter Four (Worpswede, July 16, 1903):
+
+I want to beg you, as much as I can, to have patience with everything unresolved in your heart and to try to love the questions themselves as if they were locked rooms or books written in a very foreign language. Don't search for the answers, which could not be given to you now, because you would not be able to live them. And the point is, to live everything. Live the questions now. Perhaps then, someday far in the future, you will gradually, without even noticing it, live your way into the answer.
+
+Therefore, dear Sir, love your solitude and try to sing out with the pain it causes you. For those who are near you are far away, you write, and this shows that the space around you is beginning to grow vast.
+
+---
+
+From Letter Seven (Rome, May 14, 1904):
+
+It is good to be solitary, for solitude is difficult; that something is difficult must be one more reason for us to do it.
+
+It is also good to love: because love is difficult. For one human being to love another human being: that is perhaps the most difficult task that has been entrusted to us, the ultimate task, the final test and proof, the work for which all other work is merely preparation.
+
+This more human love will resemble what we are now preparing painfully and with great struggle: the love that consists in this: that two solitudes protect and border and greet each other.
+
+---
+
+From Letter Eight (Borgebygard, Sweden, August 12, 1904):
+
+You have had many sadnesses, large ones, which passed. And you say that even this passing was difficult and upsetting for you. But please, ask yourself whether these large sadnesses haven't rather gone right through you. Perhaps many things inside you have been transformed; perhaps somewhere, deep inside your being, you have undergone important changes while you were sad.
+
+It seems to me that almost all our sadnesses are moments of tension, which we feel as paralysis because we no longer hear our astonished emotions living. Because we are alone with the unfamiliar presence that has entered us; because everything we trust and are used to is for a moment taken away from us; because we stand in the midst of a transition where we cannot remain standing.
+
+We must accept our reality as vastly as we possibly can; everything, even the unprecedented, must be possible within it. This is in the end the only kind of courage that is required of us: the courage to face the strangest, most unusual, most inexplicable experiences that can meet us.
+
+Perhaps everything that frightens us is, in its deepest being, something helpless that wants our love.
+
+So you mustn't be frightened, dear Mr. Kappus, if a sadness rises in front of you, larger than any you have ever seen; if an anxiety, like light and cloud-shadows, moves over your hands and over everything you do. You must realize that something is happening to you, that life has not forgotten you, that it holds you in its hand and will not let you fall.
+
+---
+
+From Letter Nine (Sweden, November 4, 1904):
+
+And as for the rest, let life happen to you. Believe me: life is in the right, always.
+
+And your doubt can become a good quality if you train it. It must become knowing, it must become criticism. Ask it, whenever it wants to spoil something for you, why something is ugly, demand proofs from it, test it, and you will find it perhaps bewildered and embarrassed, perhaps also protesting. But don't give in, insist on arguments, and the day will come when instead of being a destroyer, it will become one of your best workers — perhaps the most intelligent of all the ones that are building your life."""
+
+
 # Albert Camus Nobel Prize Acceptance Speech (1957) - Moral commitment, artistic duty
-CAMUS_NOBEL_SPEECH = """In receiving the distinction with which your free Academy has so generously honoured me, my gratitude has been profound, particularly when I consider the extent to which this recompense has surpassed my personal merits. Every man, and for stronger reasons, every artist, wants to be recognized. So do I. But I have not been able to learn of your decision without comparing its repercussions to what I really am. A man almost young, rich only in his doubts and with his work still in progress, accustomed to living in the solitude of work or in the retreats of friendship: how would he not feel a kind of panic at hearing the decree that transports him all of a sudden, alone and reduced to himself, to the centre of a glaring light? And with what feelings could he accept this honour at a time when other writers in Europe, among them the very greatest, are condemned to silence, and even at a time when the country of his birth is going through unending misery?
+CAMUS_NOBEL_SPEECH = """In receiving the distinction with which your free Academy has so generously honoured me, my gratitude has been profound, particularly when I consider the extent to which this recompense has surpassed my personal merits. Every man, and for stronger reasons, every artist, wants to be recognized. So do I. But I have not been able to learn of your decision without comparing its repercussions to what I really am. A man almost young, rich only in his doubts and with his work still in progress, accustomed to living in the solitude of work or in the retreats of friendship: how would he not feel a kind of panic at hearing the decree that transports him all of a sudden, alone and reduced to himself, to the centre of a glaring light?
 
-I felt that shock and inner turmoil. In order to regain peace I have had, in short, to come to terms with a too generous fortune. And since I cannot live up to it by merely resting on my achievement, I have found nothing to support me but what has supported me through all my life, even in the most contrary circumstances: the idea that I have of my art and of the role of the writer. Let me only tell you, in a spirit of gratitude and friendship, as simply as I can, what this idea is.
+I felt that shock and inner turmoil. In order to regain peace I have had, in short, to come to terms with a too generous fortune. And since I cannot live up to it by merely resting on my achievement, I have found nothing to support me but what has supported me through all my life, even in the most contrary circumstances: the idea that I have of my art and of the role of the writer.
 
-For myself, I cannot live without my art. But I have never placed it above everything. If, on the other hand, I need it, it is because it cannot be separated from my fellow men, and it allows me to live, such as I am, on one level with them. It is a means of stirring the greatest number of people by offering them a privileged picture of common joys and sufferings. It obliges the artist not to keep himself apart; it subjects him to the most humble and the most universal truth. And often he who has chosen the fate of the artist because he felt himself to be different soon realizes that he can maintain neither his art nor his difference unless he admits that he is like the others. The artist forges himself to the others, midway between the beauty he cannot do without and the community he cannot tear himself away from. That is why true artists scorn nothing: they are obliged to understand rather than to judge.
+For myself, I cannot live without my art. But I have never placed it above everything. If, on the other hand, I need it, it is because it cannot be separated from my fellow men, and it allows me to live, such as I am, on one level with them. It is a means of stirring the greatest number of people by offering them a privileged picture of common joys and sufferings. It obliges the artist not to keep himself apart; it subjects him to the most humble and the most universal truth.
 
-By the same token, the writer's role is not free from difficult duties. By definition he cannot put himself today in the service of those who make history; he is at the service of those who suffer it. Otherwise, he will be alone and deprived of his art. Not all the armies of tyranny with their millions of men will free him from his isolation, even and particularly if he falls into step with them. But the silence of an unknown prisoner, abandoned to humiliations at the other end of the world, is enough to draw the writer out of his exile, at least whenever, in the midst of the privileges of freedom, he manages not to forget that silence, and to transmit it in order to make it resound by means of his art.
+By the same token, the writer's role is not free from difficult duties. By definition he cannot put himself today in the service of those who make history; he is at the service of those who suffer it. Otherwise, he will be alone and deprived of his art. But the silence of an unknown prisoner, abandoned to humiliations at the other end of the world, is enough to draw the writer out of his exile, at least whenever, in the midst of the privileges of freedom, he manages not to forget that silence, and to transmit it in order to make it resound by means of his art.
 
-None of us is great enough for such a task. But in all circumstances of life, in obscurity or temporary fame, cast in the irons of tyranny or for a time free to express himself, the writer can win the heart of a living community that will justify him, on the one condition that he will accept to the limit of his abilities the two tasks that constitute the greatness of his craft: the service of truth and the service of liberty. Because his task is to unite the greatest possible number of people, his art must not compromise with lies and servitude which, wherever they rule, breed solitude. Whatever our personal weaknesses may be, the nobility of our craft will always be rooted in two commitments, difficult to maintain: the refusal to lie about what one knows and the resistance to oppression.
+None of us is great enough for such a task. But in all circumstances of life, in obscurity or temporary fame, cast in the irons of tyranny or for a time free to express himself, the writer can win the heart of a living community that will justify him, on the one condition that he will accept to the limit of his abilities the two tasks that constitute the greatness of his craft: the service of truth and the service of liberty.
 
-Each generation doubtless feels called upon to reform the world. Mine knows that it will not reform it, but its task is perhaps even greater. It consists in preventing the world from destroying itself. Heir to a corrupt history, in which are mingled fallen revolutions, technology gone mad, dead gods, and worn-out ideologies, where mediocre powers can destroy all yet no longer know how to convince, where intelligence has debased itself to become the servant of hatred and oppression, this generation starting from its own negations has had to re-establish, both within and without, a little of that which constitutes the dignity of life and death.
-
-In a world threatened by disintegration, in which our grand inquisitors run the risk of establishing forever the kingdom of death, it knows that it should, in an insane race against the clock, restore among the nations a peace that is not servitude, reconcile anew labour and culture, and remake with all men the Ark of the Covenant. It is not certain that this generation will ever be able to accomplish this immense task, but already it is rising everywhere in the world to the double challenge of truth and liberty and, if necessary, knows how to die for it without hate. Wherever it is found, it deserves to be saluted and encouraged, particularly where it is sacrificing itself. In any event, certain of your complete approval, it is to this generation that I should like to pass on the honour that you have just given me.
-
-At the same time, after having outlined the nobility of the writer's craft, I should have put him in his proper place. He has no other claims but those which he shares with his comrades in arms: vulnerable but obstinate, unjust but impassioned for justice, doing his work without shame or pride in view of everybody, not ceasing to be divided between sorrow and beauty, and devoted finally to drawing from his double existence the creations that he obstinately tries to erect in the destructive movement of history. Who after all this can expect from him complete solutions and high morals? Truth is mysterious, elusive, always to be conquered. Liberty is dangerous, as hard to live with as it is elating. We must march toward these two goals, painfully but resolutely, certain in advance of our failings on so long a road.
-
-What writer would from now on in good conscience dare set himself up as a preacher of virtue? For myself, I must state once more that I am not of this kind. I have never been able to renounce the light, the pleasure of being, and the freedom in which I grew up. But although this nostalgia explains many of my errors and my faults, it has doubtless helped me toward a better understanding of my craft. It is helping me still to support unquestioningly all those silent men who sustain the life made for them in the world only through memory of the return of brief and free happiness.
-
-Thus reduced to what I really am, to my limits and debts as well as to my difficult creed, I feel freer, in concluding, to comment upon the extent and the generosity of the honour you have just bestowed upon me, freer also to tell you that I would receive it as an homage rendered to all those who, sharing in the same fight, have not received any privilege, but have on the contrary known misery and persecution. It remains for me to thank you from the bottom of my heart and to make before you publicly, as a personal sign of my gratitude, the same and ancient promise of faithfulness which every true artist repeats to himself in silence every day."""
-
-
-# Key themes from Rilke's Letters to a Young Poet (reference for style)
-RILKE_LETTERS_THEMES = """
-KEY THEMES FROM RILKE'S LETTERS TO A YOUNG POET:
-
-1. SOLITUDE AS GIFT: "The necessary thing is... great inner solitude. Going into yourself and meeting no one for hours."
-
-2. PATIENCE WITH UNCERTAINTY: "Be patient toward all that is unsolved in your heart and try to love the questions themselves."
-
-3. THE DIFFICULTY OF LIVING: "We have no reason to harbor any mistrust against our world, for it is not against us."
-
-4. SADNESS AS TRANSFORMATION: "So you mustn't be frightened... if a sadness rises in front of you, larger than any you have ever seen."
-
-5. TRUSTING THE PROCESS: "Let life happen to you. Believe me: life is in the right, always."
-
-6. THE INNER VOICE: "Go into yourself. Search for the reason that bids you write."
-
-7. LOVE AS WORK: "For one human being to love another: that is perhaps the most difficult of all our tasks."
-
-8. ACCEPTING NOT KNOWING: "Live the questions now. Perhaps you will then gradually, without noticing it, live along some distant day into the answer."
-"""
+Each generation doubtless feels called upon to reform the world. Mine knows that it will not reform it, but its task is perhaps even greater. It consists in preventing the world from destroying itself. Heir to a corrupt history, in which are mingled fallen revolutions, technology gone mad, dead gods, and worn-out ideologies, this generation starting from its own negations has had to re-establish, both within and without, a little of that which constitutes the dignity of life and death."""
 
 
 # =============================================================================
@@ -324,8 +348,8 @@ Write 100-250 words. The listener should feel calmed, centered, and quietly stre
 
     "rilke": f"""You are writing in the style of Rainer Maria Rilke's Letters to a Young Poet - intimate, philosophical, deeply encouraging.
 
-REFERENCE THESE KEY THEMES:
-{RILKE_LETTERS_THEMES}
+STUDY THESE ACTUAL PASSAGES FROM THE LETTERS:
+{RILKE_LETTERS_TEXT}
 
 KEY TECHNIQUES TO USE:
 
@@ -350,7 +374,7 @@ KEY TECHNIQUES TO USE:
    - Faith in unfolding
 
 5. THE DIFFICULTY IS THE POINT:
-   - "Perhaps everything terrible is in its deepest being something helpless that wants help from us"
+   - "Perhaps everything that frightens us is, in its deepest being, something helpless that wants our love"
    - Transform struggle into meaning
    - Sadness as transformation
 
@@ -358,11 +382,12 @@ KEY TECHNIQUES TO USE:
    - Rich metaphors from nature and art
    - Abstract concepts made sensory
    - Beautiful sentences that reward re-reading
+   - Long, flowing sentences that build
 
 7. RHYTHM:
-   - Long, flowing sentences that build
-   - Punctuated by short, profound statements
+   - Long, flowing sentences punctuated by short, profound statements
    - The pace of thoughtful correspondence
+   - Space for the reader to absorb each thought
 
 Use [pause] after profound statements. Use [tenderly] and [thoughtfully] for delivery.
 Write 100-250 words. The listener should feel personally addressed, understood, and gently guided.""" + AUDIO_TAGS_INSTRUCTION,
@@ -948,6 +973,11 @@ def get_desiderata_text() -> str:
     return DESIDERATA_TEXT
 
 
+def get_rilke_letters() -> str:
+    """Get excerpts from Rilke's Letters to a Young Poet for reference."""
+    return RILKE_LETTERS_TEXT
+
+
 def get_camus_speech() -> str:
-    """Get the full Camus Nobel Prize speech for reference."""
+    """Get the Camus Nobel Prize acceptance speech for reference."""
     return CAMUS_NOBEL_SPEECH
