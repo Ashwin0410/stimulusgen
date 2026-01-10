@@ -878,9 +878,14 @@ function updateWordCount() {
 }
 
 async function generateText() {
-  const topic = document.getElementById("llm-topic")?.value;
-  if (!topic) {
-    utils.showError("Please enter a topic");
+  // Get topic and custom prompt values
+  const topic = document.getElementById("llm-topic")?.value?.trim() || "";
+  const customPrompt = document.getElementById("llm-custom-prompt")?.value?.trim() || "";
+
+  // Topic is required ONLY if no custom prompt is provided
+  // If custom prompt exists, it serves as the complete instruction
+  if (!customPrompt && !topic) {
+    utils.showError("Please enter a topic (or provide a custom prompt)");
     return;
   }
 
@@ -896,9 +901,6 @@ async function generateText() {
     } else if (currentTargetWords) {
       targetWords = currentTargetWords;
     }
-
-    // Get custom prompt if provided
-    const customPrompt = document.getElementById("llm-custom-prompt")?.value?.trim() || null;
 
     // Build the API request
     const requestData = {
