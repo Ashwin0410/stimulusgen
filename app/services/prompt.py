@@ -769,7 +769,7 @@ def _format_duration_estimate(target_words: int, words_per_minute: int = DEFAULT
 
 
 def build_prompt(
-    topic: str,
+    topic: str = "",
     style: str = "default",
     template: str = "about_topic",
     custom_system: str = None,
@@ -781,15 +781,19 @@ def build_prompt(
     Build complete prompt pair (system, user) for LLM.
     
     Args:
-        topic: The topic to write about
+        topic: The topic to write about (optional if custom_user is provided)
         style: Prompt style (default, chaplin, sagan, etc.)
         template: User prompt template (about_topic, journey, etc.)
         custom_system: Custom system prompt (overrides style)
-        custom_user: Custom user prompt (overrides template)
+        custom_user: Custom user prompt (overrides template, makes topic optional)
         context: Additional context to add to system prompt
         target_words: Target word count for the generated text
     
     Returns tuple of (system_prompt, user_prompt).
+    
+    Note: When custom_user is provided, it serves as the complete user instruction
+    and topic becomes optional. The custom_user prompt should contain all necessary
+    context for the generation.
     """
     if custom_system:
         system_prompt = custom_system
@@ -817,9 +821,20 @@ def build_prompt(
         )
         system_prompt += word_count_instruction
     
+    # Build user prompt
     if custom_user:
+        # Custom user prompt provided - use it directly
+        # Topic is optional in this case since custom_user contains the full instruction
         user_prompt = custom_user
+        
+        # If topic is also provided, prepend it as context
+        if topic and topic.strip():
+            user_prompt = f"Topic/Context: {topic}\n\n{custom_user}"
     else:
+        # No custom user prompt - use template with topic
+        # If no topic provided, use a sensible default
+        if not topic or not topic.strip():
+            topic = "the human experience"
         user_prompt = get_user_prompt(template, topic)
     
     # Also add word count reminder to user prompt if specified
