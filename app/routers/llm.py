@@ -19,7 +19,7 @@ router = APIRouter()
 
 
 class GenerateTextRequest(BaseModel):
-    topic: str
+    topic: str = ""  # Optional - not required when custom_user_prompt is provided
     style: str = "default"
     template: str = "about_topic"
     model: str = "claude-3-sonnet-20240229"
@@ -46,6 +46,16 @@ class GenerateTextResponse(BaseModel):
 async def generate_speech_text(request: GenerateTextRequest):
     """Generate speech text using LLM."""
     try:
+        # Validation: topic is required if no custom_user_prompt is provided
+        has_topic = request.topic and request.topic.strip()
+        has_custom_prompt = request.custom_user_prompt and request.custom_user_prompt.strip()
+        
+        if not has_topic and not has_custom_prompt:
+            raise HTTPException(
+                status_code=400, 
+                detail="Either 'topic' or 'custom_user_prompt' must be provided"
+            )
+        
         # Build prompts
         system_prompt, user_prompt = build_prompt(
             topic=request.topic,
@@ -93,6 +103,9 @@ async def generate_speech_text(request: GenerateTextRequest):
             actual_words=actual_words,
             word_count_warning=word_count_warning,
         )
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is (like our validation error)
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Text generation failed: {str(e)}")
 
